@@ -1,0 +1,22 @@
+# Ignore training and temporary artifacts
+artifacts/data/
+artifacts/training_outputs/
+
+# Ignore log files and folders
+logs/
+logs/*
+!logs/README.md   # (optional: keep a placeholder if needed)
+
+# Ignore datasets
+kaggle_dataset/
+logs/
+notebooks/
+data/
+
+
+# Ignore notebook checkpoints
+*.ipynb_checkpoints
+
+# Ignore any zip or temp files
+*.zip
+*.tmp

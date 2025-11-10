@@ -1,0 +1,10 @@
+# Example YOLO dataset config
+# Absolute paths for YOLOv8 on Windows
+train: C:\Users\sush0\OneDrive\Desktop\Helmet_detection_project\Helmet_Detection_Project\data\training_data\images\train
+val: C:\Users\sush0\OneDrive\Desktop\Helmet_detection_project\Helmet_Detection_Project\data\training_data\images\val
+test: C:\Users\sush0\OneDrive\Desktop\Helmet_detection_project\Helmet_Detection_Project\data\training_data\images\test
+
+
+nc: 3
+names: ['class1', 'class2', 'class3']
+

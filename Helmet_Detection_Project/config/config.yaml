@@ -1,0 +1,29 @@
+artifacts_root : artifacts
+
+data_ingestion :
+  root_dir : artifacts/data/data_ingestion
+  source_URL : https://drive.google.com/uc?export=download&id=1x2dCh-QYlxlgabeVWQJNkv5IEGIyJSmD
+  local_data_file : artifacts/data/data_ingestion/safety-helmet-detection.tar
+  unzip_dir : artifacts/data/data_ingestion/
+# Helmet_Detection_Project\artifacts\data\data_ingestion\safety-helmet-detection.zip
+data_validation :
+  root_dir : artifacts/data/data_ingestion/ds
+  img_dir : artifacts/data/data_ingestion/ds/img
+  ann_dir : artifacts/data/data_ingestion/ds/ann
+  status_file : artifacts/data/data_ingestion/status.txt
+
+data_transformation :
+  root_dir : artifacts/data/data_transformation
+  labels_dir : artifacts/data/data_transformation/txt_labels
+  ann_dir : artifacts/data/data_ingestion/ds/ann
+  img_dir: artifacts/data/data_ingestion/ds/img
+  image_data_dir : artifacts/data/data_transformation/images
+  label_data_dir : artifacts/data/data_transformation/labels
+  
+ 
+
+models :
+  root_dir : artifacts/models
+  model_dir : artifacts/models/model.pkl
+  data : config/dataset.yaml
+  kaggle_data : config/kaggledata.yaml
