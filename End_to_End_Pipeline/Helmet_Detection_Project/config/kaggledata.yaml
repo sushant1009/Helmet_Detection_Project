@@ -1,0 +1,6 @@
+train: /kaggle/input/project/data/train/images
+val: /kaggle/input/project/data/val/images
+test: /kaggle/input/project/data/test/images
+
+nc: 2
+names: ['helmet', 'no_helmet']

@@ -1,5 +1,0 @@
-train: ../data/train
-val: ../images/val
-
-nc: 2
-names: ['helmet', 'head']

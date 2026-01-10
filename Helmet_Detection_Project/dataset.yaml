@@ -1,6 +1,0 @@
-
-train: data/datasets/images\train
-val: data/datasets/images\val
-
-nc: 3
-names: ['helmet', 'head', 'person']

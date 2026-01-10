@@ -1,0 +1,11 @@
+Data_Split:
+  train_split: 0.7
+  val_split: 0.2 
+  test_split: 0.1
+
+model :
+ epochs: 5
+ imgsz: 720
+ batch: 16
+ device: 0
+ model_name: yolov8m.pt
