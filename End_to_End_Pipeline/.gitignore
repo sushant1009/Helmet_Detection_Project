@@ -5,3 +5,5 @@
 /kaggle_dataset/
 .vscode/
 /models
+/face_recognition/face_rec/*
+/face_recognition/.env
