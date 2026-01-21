@@ -16,9 +16,7 @@ from typing import List, Tuple
 from datetime import datetime, date, timedelta
 from pymongo import MongoClient
 
-# -------------------------
-# Configuration 
-# -------------------------
+
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
 DB_NAME = os.environ.get("DB_NAME", "face_db")
 USERS_COLLECTION = os.environ.get("USERS_COLLECTION", "embeddings")
@@ -32,9 +30,6 @@ FAISS_INDEX_PATH = os.environ.get("FAISS_INDEX_PATH", "faiss.index")
 EMBED_DIM = int(os.environ.get("EMBED_DIM", 512))                     
 SIMILARITY_THRESHOLD = float(os.environ.get("SIM_THRESHOLD", 0.38))  
 
-# -------------------------
-# MongoDB Setup
-# -------------------------
 mongo_client = pymongo.MongoClient(MONGO_URI)
 db = mongo_client[DB_NAME]
 users_col = db[USERS_COLLECTION]
@@ -42,43 +37,30 @@ attendance_col = db[ATTENDANCE_COLLECTION]
 user_details = db[USERS_DB]
 
 
-# -------------------------
-# FAISS / Index state
-# -------------------------
 _index_lock = threading.Lock()
 _faiss_index: faiss.Index = None
-_user_ids: List[str] = []   # index position -> user_id
-_user_names: List[str] = [] # index position -> name (optional)
+_user_ids: List[str] = []  
+_user_names: List[str] = []
 _index_loaded = False
 
-# -------------------------
-# InsightFace model (load once)
-# -------------------------
+
 print("Loading InsightFace model...")
 face_model = insightface.app.FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
 face_model.prepare(ctx_id=-1, det_size=(640, 640))
 print("InsightFace ready")
 
-# -------------------------
-# FastAPI app
-# -------------------------
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to your frontend origin in production
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -------------------------
-# Helper: load embeddings from MongoDB and build FAISS index
-# -------------------------
+
 def load_embeddings_from_db() -> Tuple[faiss.Index, List[str], List[str]]:
-    """
-    Load all embeddings from users_col, build a FAISS IndexFlatIP, and return index + user_ids + names.
-    Embeddings must be stored as Python lists in MongoDB (length EMBED_DIM).
-    """
     print("Loading embeddings from MongoDB...")
     docs = list(users_col.find({}))
     if not docs:
@@ -120,7 +102,7 @@ def load_embeddings_from_db() -> Tuple[faiss.Index, List[str], List[str]]:
     embeddings_np = np.vstack(embeddings).astype('float32')
 
     # Build FAISS index
-    idx = faiss.IndexFlatIP(EMBED_DIM)  # inner product = cosine when vectors are normalized
+    idx = faiss.IndexFlatIP(EMBED_DIM) 
     idx.add(embeddings_np)
     print(f"FAISS index built with {idx.ntotal} vectors")
     return idx, user_ids, names
@@ -146,9 +128,6 @@ def initialize_index():
 
 initialize_index()
 
-# -------------------------
-# Utility: add one new embedding to index (thread-safe)
-# -------------------------
 def add_embedding_to_index(user_id: str, name: str, embedding: List[float]):
    
     global _faiss_index, _user_ids, _user_names
@@ -174,9 +153,6 @@ def add_embedding_to_index(user_id: str, name: str, embedding: List[float]):
         upsert=True
     )
 
-# -------------------------
-# Attendance marking
-# -------------------------
 
 def mark_attendance(user_id: str, update_threshold: int = 5):
 

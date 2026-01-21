@@ -1,0 +1,50 @@
+.register-container {
+  max-width: 400px;
+  margin: 50px auto;
+  background-color: #222;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0px 0px 10px #000;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input, button {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+}
+
+input[type="text"], input[type="file"], input[type="date"], input[type="email"]{
+  padding: 10px;
+  margin: 10px;
+  background-color: #333;
+  color: white;
+}
+
+button {
+  background-color: #4dabf7;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #339af0;
+}
+
+role{
+   padding: 10px;
+  margin: 10px;
+  background-color: #333;
+  color: white;
+  border: 5%;
+}
+.message {
+  margin-top: 15px;
+  color: #ccc;
+}

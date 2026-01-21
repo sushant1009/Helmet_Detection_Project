@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import pickle
 import insightface
     
 class GenerateEmbeddings:
@@ -27,7 +26,7 @@ class GenerateEmbeddings:
             cv2.imshow("Face Capture", frame)
             key = cv2.waitKey(1) & 0xFF
             success = False
-            if key == ord('c') and len(faces) > 0:  # capture only once
+            if key == ord('c') and len(faces) > 0:  
                 face = faces[0]
                 emb = face.embedding
                 emb = emb / np.linalg.norm(emb)

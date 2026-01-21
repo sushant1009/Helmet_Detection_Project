@@ -62,6 +62,7 @@ async def register_user(
     dob: str = Form(...),
     email: str = Form(...),
     phone: str = Form(...),
+    role: str = Form(...),
     file: UploadFile = File(...)
 ):
     try:
@@ -87,7 +88,7 @@ async def register_user(
         # Generate embeddings
         embedding = embeddings_Generator.generate_Embeddings_img(img)
         # print(embedding)
-        print(full_name," ",aadhar_no," ",phone," ",email," ",photo_path," ",dob," ",datetime.now())
+        print(full_name," ",aadhar_no," ",phone," ",email," ",photo_path," ",dob," ",role," ",datetime.now())
         
        
         user_data = {
@@ -97,6 +98,7 @@ async def register_user(
             "dob": dob,
             "email": email,
             "phone": phone,
+            "role": role,
             "photo_path": photo_path,
             "created_at": datetime.now()
         }
