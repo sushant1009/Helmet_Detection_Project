@@ -19,7 +19,7 @@ input, button {
   border-radius: 6px;
 }
 
-input[type="text"], input[type="file"], input[type="date"], input[type="email"]{
+input[type="text"], input[type="file"], input[type="date"], input[type="email"],input[type="password"]{
   padding: 10px;
   margin: 10px;
   background-color: #333;

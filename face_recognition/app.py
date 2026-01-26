@@ -135,10 +135,10 @@ def send_email_background(email: str, otp: str):
             server.login(SENDER_EMAIL, SENDER_PASSWORD)
             server.send_message(msg)
 
-        print(f"✅ OTP {otp} sent to {email}")
+        print(f" OTP {otp} sent to {email}")
 
     except Exception as e:
-        print(f"❌ Error sending OTP to {email}: {e}")
+        print(f" Error sending OTP to {email}: {e}")
 
 
 @app.post("/send-otp")
@@ -164,6 +164,29 @@ async def verify_otp(data: dict):
     else:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
+
+@app.post("/get-embeddings")
+async def generate_embeddings(file: UploadFile = File(...), workerId: str = Form(...), supervisorId: str = Form(...) ):
+    img_data = np.frombuffer(await file.read(), np.uint8)
+    img = cv2.imdecode(img_data, cv2.IMREAD_COLOR)
+
+    if img is None:
+        raise HTTPException(status_code=400, detail="Could not read image")
+
+    embedding = embeddings_Generator.generate_Embeddings_img(img)
+    embeddings_col.insert_one({
+            "workerId": workerId,
+             "supervisorId": supervisorId,
+             "embedding": embedding.tolist() if hasattr(embedding, 'tolist') else embedding,
+            "created_at": datetime.now()
+        })
+    doc = embeddings_col.find_one({"workerId": workerId}, {"_id": 1})
+    print(str(doc["_id"]))
+    return {
+        "id": str(doc["_id"])
+    }
+
+    
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)

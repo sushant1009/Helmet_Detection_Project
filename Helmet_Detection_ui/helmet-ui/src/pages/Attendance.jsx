@@ -7,8 +7,7 @@ export default function AttendanceViewer() {
   const [running, setRunning] = useState(false);
   const runningRef = useRef(false);
   
-
-  const WS_URL = "ws://localhost:8000/ws/attendance";
+  const WS_URL = `ws://localhost:8000/ws/attendance?token=${sessionStorage.getItem("token")}`;
 
   const start = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -30,6 +29,11 @@ export default function AttendanceViewer() {
     if (data.image) {
       imgRef.current.src = `data:image/jpeg;base64,${data.image}`;
     }
+     if (data.error) {
+    stop()
+    alert(data.error);   // "Token expired"
+    ws.close();
+  }
   };
 };
 

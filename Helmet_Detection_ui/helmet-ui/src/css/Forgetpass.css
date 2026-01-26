@@ -1,0 +1,57 @@
+
+.otp-container {
+  width: 350px;
+  margin: 100px auto;
+  padding: 25px;
+  border-radius: 12px;
+  background: #f7f7f7;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.otp-container h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.otp-container input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.otp-container button {
+  width: 100%;
+  padding: 10px;
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.otp-container button:hover {
+  background-color: #4338ca;
+}
+
+.message {
+  margin-top: 15px;
+  font-weight: 500;
+}
+
+.timer {
+  margin-top: 10px;
+  color: #555;
+  font-size: 14px;
+}
+
+.resend-btn {
+  margin-top: 10px;
+  background-color: #10b981;
+}
+
+.resend-btn:hover {
+  background-color: #059669;
+}

@@ -225,39 +225,6 @@ async def recognize_frame_and_search(frame_bgr: np.ndarray) -> List[dict]:
             detections.append(r)
     return detections
 
-def _search_embedding(emb: np.ndarray, bbox: np.ndarray) -> dict:
-    """
-    Synchronous function that queries FAISS index and returns a detection dict.
-    """
-    global _faiss_index, _user_ids, _user_names
-    if _faiss_index is None or _faiss_index.ntotal == 0:
-        # no known faces
-        return {
-            "label": "Unknown",
-            "score": 0.0,
-            "x1": int(bbox[0]), "y1": int(bbox[1]), "x2": int(bbox[2]), "y2": int(bbox[3])
-        }
-
-    # protect index with lock because FAISS is not thread-safe for simultaneous writes; reads are usually safe but we lock
-    with _index_lock:
-        D, I = _faiss_index.search(emb.reshape(1, -1).astype('float32'), 1)
-        score = float(D[0][0])
-        idx = int(I[0][0])
-        if idx < 0 or idx >= len(_user_ids):
-            label = "Unknown"
-        else:
-            candidate_id = _user_ids[idx]
-            candidate_name = _user_names[idx] if idx < len(_user_names) else candidate_id
-            if score >= SIMILARITY_THRESHOLD:
-                label = candidate_name  # or return candidate_id if you prefer
-            else:
-                label = "Unknown"
-    return {
-        "label": label,
-        "user_id":candidate_id,
-        "score": score,
-        "x1": int(bbox[0]), "y1": int(bbox[1]), "x2": int(bbox[2]), "y2": int(bbox[3])
-    }
 
 # -------------------------
 # WebSocket endpoint for attendance streaming

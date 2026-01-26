@@ -2,8 +2,9 @@ import React, { useState, useRef } from "react";
 import axios from "axios";
 import Webcam from "react-webcam";
 import "./Register.css";
-import { validateForm } from "./validateRegistration";
+import { validateForm } from "./validateForm";
 import api from '../config/axiosConfig'
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
   const webcamRef = useRef(null);
@@ -13,14 +14,18 @@ export default function Register() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
   
 
   const [formData, setFormData] = useState({
     aadhar_no: "",
     full_name: "",
+    site_name: "",
     dob: "",
     email: "",
     phone: "",
+    password: "",
+    cpassword:"",
   });
 
   const [message, setMessage] = useState("");
@@ -71,9 +76,9 @@ export default function Register() {
     e.preventDefault();
     const validationErrors = validateForm(formData);
     setErrors(validationErrors);
-    // if (!otpVerified) return setMessage("Please verify your email first.");
+    if (!otpVerified) return setMessage("Please verify your email first.");
     if (!capturedImage) return setMessage("Please capture a face image.");
-    // if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
+    if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
     {
     setLoading(true);
     const blob = await (await fetch(capturedImage)).blob();
@@ -82,26 +87,35 @@ export default function Register() {
     const data = new FormData();
 data.append("fullName", formData.full_name);
 data.append("aadharNo", formData.aadhar_no);
+data.append("siteName", formData.site_name);
 data.append("dob", formData.dob);
 data.append("email", formData.email);
 data.append("phoneNo", formData.phone);
+data.append("password", formData.password);
 data.append("file", imageFile);
 
     try {
-      const res = await api.post("/api/worker/register", data, {headers: {
+      const res = await api.post("api/auth/signup", data, {
+  headers: {
     "Content-Type": "multipart/form-data"
-  }});
-      alert(res.data);
-      setFormData({
+  }
+});
+    alert(res.data);
+    console.log(res.data)
+    setFormData({
     aadhar_no: "",
     full_name: "",
+    site_name: "",
     dob: "",
     email: "",
     phone: "",
+    password: "",
+    cpassword:"",
   })
   setCapturedImage(null)
   setOtpSent(false)
   setOtpVerified(false)
+  navigate('/')
     } catch (err) {
       setMessage("Error registering user.");
       console.error(err);
@@ -113,7 +127,7 @@ data.append("file", imageFile);
 
   return (
     <div className="register-container container mt-4">
-      <h2 className="text-center mb-4">Worker Registration</h2>
+      <h2 className="text-center mb-4">Supervisor Registration</h2>
 
       <form className="register-form" onSubmit={handleSubmit}>
         <div className="row">
@@ -145,6 +159,19 @@ data.append("file", imageFile);
             {errors.full_name && <small className="text-danger">{errors.full_name}</small>}
           </div>
 
+          <div className="col-md-6 mb-3">
+            <input
+              type="text"
+              name="site_name"
+              placeholder="Site Name"
+              onChange={handleChange}
+              value={formData.site_name}
+              className="form-control"
+              required
+            />
+            {errors.site_name && <small className="text-danger">{errors.site_name}</small>}
+          </div>
+
           {/* Date of Birth */}
           <div className="col-md-6 mb-3">
             <input
@@ -157,8 +184,6 @@ data.append("file", imageFile);
             />
             {errors.dob && <small className="text-danger">{errors.dob}</small>}
           </div>
-      
-
           {/* Email */}
           <div className="col-md-6 mb-3">
             <input
@@ -186,6 +211,33 @@ data.append("file", imageFile);
             />
             {errors.phone && <small className="text-danger">{errors.phone}</small>}
           </div>
+
+           <div className="col-md-6 mb-3">
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              onChange={handleChange}
+              value={formData.password}
+              className="form-control"
+              required
+            />
+            {errors.password && <small className="text-danger">{errors.password}</small>}
+          </div>
+
+          <div className="col-md-6 mb-3">
+            <input
+              type="password"
+              name="cpassword"
+              placeholder="Confirm Password"
+              onChange={handleChange}
+              value={formData.cpassword}
+              className="form-control"
+              required
+            />
+            {errors.cpassword && <small className="text-danger">{errors.cpassword}</small>}
+          </div>
+          
         </div>
 
         {/* OTP Section */}

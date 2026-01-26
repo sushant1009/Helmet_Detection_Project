@@ -54,18 +54,5 @@ export const validateForm = (formData) => {
   } else if (!/^[6-9]\d{9}$/.test(formData.phone)) {
     errors.phone = "Phone number must be a 10-digit number starting with 6–9";
   }
-  if(!formData.site_name.trim())
-  {
-    errors.site_name = "Enter Site Name"
-  }
-  if(formData.password.trim().length < 8)
-  {
-    errors.password = "Password must have minimum 8 Characters"
-  }
-  if(formData.password.trim() !== formData.cpassword.trim())
-  {
-    errors.cpassword = "Password and Confirm Password not Matching"
-  }
-
   return errors;
 };
