@@ -5,6 +5,7 @@ import numpy as np
 import insightface
 import pymongo
 import threading
+import psycopg2
 import traceback
 from dotenv import load_dotenv
 import smtplib
@@ -40,11 +41,19 @@ face_model = insightface.app.FaceAnalysis(
 face_model.prepare(ctx_id=-1, det_size=(640, 640))
 print("InsightFace loaded")
 
+SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD"))
+ATTENDANCE_URL = os.getenv("ATTENDANCE_URL")
 _index_lock = threading.Lock()
-_faiss_index = None
-_user_ids = []
-_user_names = []
-_user_emails = []
+_worker_id = []
+_supervisor_id = []
+_worker_names = []
+_worker_email = []
+_supervisor_email = []
+embeddings = []
+_faiss_index: faiss.Index = None
+_index_loaded = False
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
 
 def send_violation_email(name, user_id, score,v_email):
     msg = MIMEText(
@@ -71,42 +80,84 @@ Violation duration exceeded 3 minutes.
     print(f"Email sent for {name}")
 
 
-def load_embeddings():
-    global _faiss_index, _user_ids, _user_names,_user_emails
+def load_data_from_db():
+    conn = psycopg2.connect(
+    host=os.getenv("DB_HOST"),
+    database=os.getenv("PG_DATABASE"),
+    user=os.getenv("PG_USERNAME"),
+    password=os.getenv("PG_PASSWORD"),
+    port=os.getenv("PG_PORT")   
+)   
 
-    vectors = []
-    ids = []
-    names = []
-    emails = []
+    mongo_client = pymongo.MongoClient(
+        f"mongodb://{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/"
+    )
+    db = mongo_client[os.getenv("DB_NAME")]
+    embeddings_col = db["embeddings"]
 
-    for doc in embeddings_col.find():
-        emb = np.array(doc["embedding"], dtype="float32")
-        emb = emb / np.linalg.norm(emb)
+    cursor = conn.cursor()
 
-        user = users_col.find_one({"user_id": doc["user_id"]})
-        name = user.get("full_name", doc["user_id"])
-        email = user.get("email", doc["user_id"])
-        vectors.append(emb)
-        ids.append(doc["user_id"])
-        names.append(name)
-        emails.append(email)
+    supervisorId = 1;
 
-    if not vectors:
-        _faiss_index = faiss.IndexFlatIP(EMBED_DIM)
-        return
+    query = """
+    SELECT w.worker_id,w.full_name,w.email,w.supervisor_id,s.email
+    FROM workers w join supervisor s
+    ON w.supervisor_id = s.supervisor_id
+    WHERE w.supervisor_Id = %s;
+    """
+    
+    cursor.execute(query, (supervisorId,))
+    rows = cursor.fetchall()
 
-    vectors = np.vstack(vectors)
+    for row in rows:
+        doc = embeddings_col.find_one(
+        {
+            "workerId": str(row[0]),
+            "supervisorId": str(row[3])
+        },
+        {"embedding": 1, "_id": 0}
+        )
 
-    _faiss_index = faiss.IndexFlatIP(EMBED_DIM)
-    _faiss_index.add(vectors)
+        if doc:
+          emb = doc["embedding"]
+          embeddings.append(emb)
+          _worker_id.append(row[0])
+          _worker_names.append(row[1])
+          _worker_email.append(row[2])
+          _supervisor_id.append(row[3])
+          _supervisor_email.append(row[4])
+        else:
+            print("No matching document")
 
-    _user_ids = ids
-    _user_names = names
-    _user_emails = emails
 
-    print(f"FAISS loaded with {_faiss_index.ntotal} embeddings")
+    cursor.close()
+    conn.close()
 
-load_embeddings()
+
+
+def load_faiss_index(embeddings_list):
+    """
+    embeddings_list: List[List[float]]  (e.g. 512-d vectors)
+    returns: faiss.Index
+    """
+    if len(embeddings_list) == 0:
+        raise ValueError("No embeddings found to build FAISS index")
+
+    # Convert to numpy float32
+    vectors = np.array(embeddings_list).astype("float32")
+
+    dim = vectors.shape[1]  # 512
+    index = faiss.IndexFlatL2(dim)  # L2 distance
+
+    index.add(vectors)  # add all embeddings
+    print("FAISS index loaded with", index.ntotal, "vectors")
+
+    return index
+
+load_data_from_db()
+_faiss_index = load_faiss_index(embeddings)
+_index_loaded = True
+
 
 def search_embedding(embedding):
     with _index_lock:
@@ -125,9 +176,9 @@ def search_embedding(embedding):
         }
 
     return {
-        "label": _user_names[idx],
-        "user_id": _user_ids[idx],
-        "email": _user_emails[idx],
+        "label": _worker_names[idx],
+        "user_id": _worker_id[idx],
+        "email": _worker_email[idx],
         "score": score
     }
 

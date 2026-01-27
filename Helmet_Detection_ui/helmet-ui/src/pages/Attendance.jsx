@@ -1,3 +1,4 @@
+import axios from "axios";
 import React, { useRef, useState, useEffect } from "react";
 
 export default function AttendanceViewer() {
@@ -89,6 +90,26 @@ export default function AttendanceViewer() {
   console.log("Capture loop stopped");
 };
 
+const reload = async() =>{
+ const token = sessionStorage.getItem("token");
+try{
+const res = await axios.post(
+  "http://localhost:8000/attendance/reload_index",
+  {}, 
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+
+);
+alert(res.data.message)
+}catch(err){
+
+}
+ 
+}
+
   useEffect(() => stop, []);
   useEffect(() => {
   if (imgRef.current) {
@@ -107,6 +128,7 @@ export default function AttendanceViewer() {
         <button onClick={start} disabled={running}>Start</button>
         <button onClick={stop} disabled={!running}>Stop</button>
       </div>
+      <button onClick={reload}>Reload Index</button>
     </div>
   );
 }

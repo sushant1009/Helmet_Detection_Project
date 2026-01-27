@@ -5,6 +5,8 @@ import com.helmet_detection.helmet_detection_backend.Entity.Workers;
 import com.helmet_detection.helmet_detection_backend.Repository.AttendanceRepository;
 import com.helmet_detection.helmet_detection_backend.Repository.WorkersRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -18,10 +20,13 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final WorkersRepository workersRepository;
 
-    public void markAttendance(Long workerId) {
+    public ResponseEntity<?> markAttendance(Long workerId) {
 
         Workers worker = workersRepository.findById(workerId)
-                .orElseThrow(() -> new RuntimeException("Worker not found"));
+                .orElseThrow(null);
+
+        if(worker == null)
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("User Not Found");
 
         LocalDate today = LocalDate.now();
         LocalDateTime now = LocalDateTime.now();
@@ -31,12 +36,9 @@ public class AttendanceService {
 
         if (existing.isPresent()) {
             Attendance attendance = existing.get();
+            attendance.setExitTime(now);
+            attendanceRepository.save(attendance);
 
-            // update exit time only once
-            if (attendance.getExitTime() == null) {
-                attendance.setExitTime(now);
-                attendanceRepository.save(attendance);
-            }
         } else {
             Attendance attendance = new Attendance();
             attendance.setWorker(worker);
@@ -44,6 +46,7 @@ public class AttendanceService {
             attendance.setEntryTime(now);
             attendanceRepository.save(attendance);
         }
+        return  ResponseEntity.status(HttpStatus.OK).build();
     }
 }
 

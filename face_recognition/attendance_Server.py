@@ -9,16 +9,15 @@ import traceback
 import asyncio
 import cv2
 import jwt
+# import httpx
+import uvicorn
 import numpy as np
 import insightface
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime, date
-from typing import List, Tuple
-from datetime import datetime, date, timedelta
-from pymongo import MongoClient
-from jwt.exceptions import ExpiredSignatureError, InvalidTokenError, InvalidSignatureError
+from typing import List
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -36,7 +35,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD"))
+SIMILARITY_THRESHOLD = float(os.getenv("FACE_SIMILARITY_THRESHOLD"))
+ATTENDANCE_URL = os.getenv("ATTENDANCE_URL")
 _index_lock = threading.Lock()
 _worker_id = []
 _supervisor_id = []
@@ -79,7 +79,6 @@ def load_data_from_db():
     rows = cursor.fetchall()
 
     for row in rows:
-        print(f"w.worker_id : {row[0]} w.full_name : {row[1]}, w.email : {row[2]}, w.supervisor_id : {row[3]}, s.email : {row[4]}")
         doc = embeddings_col.find_one(
         {
             "workerId": str(row[0]),
@@ -103,52 +102,20 @@ def load_data_from_db():
     cursor.close()
     conn.close()
 
-def mark_attendance(user_id: str, update_threshold: int = 5):
-    print("Marked for ",user_id)
 
-    # today_str = date.today().isoformat()
-    # now = datetime.utcnow()
+async def mark_attendance(worker_id: int, token: str):
+    async with httpx.AsyncClient() as client:
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
 
-    # record = attendance_col.find_one({"user_id": user_id, "date": today_str})
+        resp = await client.post(f"{ATTENDANCE_URL}{worker_id}", headers=headers)
 
-    # if record:
-    #     entry_time = record.get("entry_time", now)
-    #     last_seen = record.get("last_seen", now)
-
-        
-    #     if (now - last_seen) >= timedelta(minutes=update_threshold):
-    #         worked_time = round((now - entry_time).total_seconds() / 3600, 2)  # hours
-
-    #         attendance_col.update_one(
-    #             {"user_id": user_id, "date": today_str},
-    #             {
-    #                 "$set": {
-    #                     "last_seen": now,
-    #                     "worked_time": worked_time
-    #                 }
-    #             }
-    #         )
-    #         print(f"[INFO] Updated attendance for {user_id} at {now}")
-    #     else:
-    #         print(f"[SKIP] Skipping update for {user_id}, too soon since last update.")
-    # else:
-    #     # First appearance today
-    #     attendance_col.insert_one({
-    #         "user_id": user_id,
-    #         "date": today_str,
-    #         "entry_time": now,
-    #         "last_seen": now,
-    #         "worked_time": 0
-    #     })
-    #     print(f"[INFO] New attendance entry for {user_id} at {now}")
-
+        print("Spring response:", resp.status_code, resp.text)
 
 
 def load_faiss_index(embeddings_list):
-    """
-    embeddings_list: List[List[float]]  (e.g. 512-d vectors)
-    returns: faiss.Index
-    """
+
     if len(embeddings_list) == 0:
         raise ValueError("No embeddings found to build FAISS index")
 
@@ -167,40 +134,82 @@ load_data_from_db()
 _faiss_index = load_faiss_index(embeddings)
 _index_loaded = True
 
+from fastapi import Header, HTTPException, Depends
+
+@app.post("/attendance/reload_index")
+def reload_index(authorization: str = Header(...)):
+    global embeddings, _faiss_index
+    global _worker_id, _worker_names, _worker_email
+    global _supervisor_id, _supervisor_email
+
+    # 1. Extract token
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid Authorization header")
+
+    token = authorization.split(" ")[1]
+
+    # 2. Verify token
+    payload, _ = verify_jwt(token)
+    print(payload)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    role = payload.get("role")
+    if role != "SUPERVISOR":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+
+    # 4. Clear old data
+    embeddings.clear()
+    _worker_id.clear()
+    _worker_names.clear()
+    _worker_email.clear()
+    _supervisor_id.clear()
+    _supervisor_email.clear()
+
+    # 5. Reload from DB
+    load_data_from_db()
+
+    # 6. Rebuild FAISS
+    _faiss_index = load_faiss_index(embeddings)
+
+    return {"message": "Index reloaded successfully"}
+    
 def _search_embedding(emb: np.ndarray, bbox: np.ndarray) -> dict:
-    """
-    Synchronous function that queries FAISS index and returns a detection dict.
-    """
     global _faiss_index, _worker_id, _worker_names
+
     if _faiss_index is None or _faiss_index.ntotal == 0:
-        # no known faces
         return {
             "label": "Unknown",
+            "user_id": None,
             "score": 0.0,
-            "x1": int(bbox[0]), "y1": int(bbox[1]), "x2": int(bbox[2]), "y2": int(bbox[3])
+            "x1": int(bbox[0]), "y1": int(bbox[1]),
+            "x2": int(bbox[2]), "y2": int(bbox[3])
         }
 
-    # protect index with lock because FAISS is not thread-safe for simultaneous writes; reads are usually safe but we lock
     with _index_lock:
         D, I = _faiss_index.search(emb.reshape(1, -1).astype('float32'), 1)
         score = float(D[0][0])
         idx = int(I[0][0])
-        if idx < 0 or idx >= len(_worker_id):
-            label = "Unknown"
-        else:
-            candidate_id = _worker_id[idx]
-            candidate_name = _worker_names[idx] if idx < len(_worker_names) else candidate_id
-            if score >= SIMILARITY_THRESHOLD:
-                label = candidate_name  # or return candidate_id if you prefer
-            else:
-                label = "Unknown"
+        print(score," ",idx)
+        # default
+        label = "Unknown"
+        user_id = None
+
+        if 0 <= idx < len(_worker_id):
+            if score <= SIMILARITY_THRESHOLD:
+                label = _worker_names[idx]
+                user_id = _worker_id[idx]
+
     return {
         "label": label,
-        "user_id":candidate_id,
+        "user_id": user_id,
         "score": score,
-        "x1": int(bbox[0]), "y1": int(bbox[1]), "x2": int(bbox[2]), "y2": int(bbox[3])
+        "x1": int(bbox[0]), "y1": int(bbox[1]),
+        "x2": int(bbox[2]), "y2": int(bbox[3])
     }
-    
+
+
 async def recognize_frame_and_search(frame_bgr: np.ndarray) -> List[dict]:
    
     # run face detection + embedding (InsightFace is synchronous CPU-bound)
@@ -265,7 +274,8 @@ async def websocket_attendance(ws: WebSocket):
     await ws.accept()
     print("WebSocket authenticated:", payload)
 
-    recognized_session = set()
+    last_seen = {}
+    THRESHOLD = timedelta(minutes=10) # Min. time between attendance marking
     try:
         while True:
             # receive text (we expect JSON with {"image": "data:image/jpeg;base64,..."})
@@ -279,7 +289,6 @@ async def websocket_attendance(ws: WebSocket):
             try:
                 data = json.loads(raw)
             except Exception:
-                # If not JSON, treat raw as plain base64 image
                 data = {"image": raw}
 
             img_b64 = data.get("image")
@@ -311,10 +320,8 @@ async def websocket_attendance(ws: WebSocket):
                 print("Could not decode image")
                 continue
 
-            # Run recognition/detection asynchronously (this function should return list of detections)
+            # Face detections and recognition 
             try:
-                # recognize_frame_and_search should be the async helper that returns:
-                # [ { "label": ..., "score": ..., "x1":..., "y1":..., "x2":..., "y2":... }, ... ]
                 detections = await recognize_frame_and_search(frame)
             except Exception as e:
                 print("Error during recognition:", e)
@@ -322,17 +329,26 @@ async def websocket_attendance(ws: WebSocket):
                 await ws.send_text(json.dumps({"error": "recognition_failed"}))
                 continue
 
-            # mark attendance for newly recognized persons (non-blocking)
+            # Attendance Marking
             loop = asyncio.get_running_loop()
             for det in detections:
                 label = det.get("label")
                 score = det.get("score", 0.0)
                 user_id = det.get("user_id")
-                if label and label != "Unknown" and label not in recognized_session and score >= SIMILARITY_THRESHOLD:
-                    recognized_session.add(label)
-                    # run mark_attendance in executor so it doesn't block
-                    loop.run_in_executor(None, mark_attendance, user_id)
-                    print(f"Marking attendance for {label}")
+                if label and label != "Unknown" and  score >= SIMILARITY_THRESHOLD:
+                    now = datetime.now()
+
+                    if user_id not in last_seen:
+                        last_seen[user_id] = now
+                        await mark_attendance(user_id, token)
+                        print(f"First entry for user {user_id}")
+
+                    diff = now - last_seen[user_id]
+                  
+                    if diff > THRESHOLD:
+                        last_seen[user_id] = now
+                        await mark_attendance(user_id, token)
+                        print(f"Updated entry for user {user_id}")          
 
             # draw boxes & labels onto frame (so frontend can display annotated frame)
             for det in detections:
@@ -366,7 +382,7 @@ async def websocket_attendance(ws: WebSocket):
             }
             try:
                 await ws.send_text(json.dumps(payload))
-                print(f"Sent annotated frame with {len(detections)} detections")
+                
             except Exception as e:
                 print("Failed to send payload:", e)
                 traceback.print_exc()
@@ -384,8 +400,4 @@ async def websocket_attendance(ws: WebSocket):
         
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("attendance_Server:app", host="0.0.0.0", port=8000, reload=True)
-
-
-
+    uvicorn.run("attendance_Server:app", host="0.0.0.0", port=8000, reload=False)
