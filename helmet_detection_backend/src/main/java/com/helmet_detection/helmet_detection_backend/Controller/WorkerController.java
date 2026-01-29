@@ -76,7 +76,7 @@ public class WorkerController {
             String id = supervisorService.saveEmbeddings(file,saved.getWorkerId(),saved.getSupervisor().getSupervisorId());
 
             if(id != null) {
-                return ResponseEntity.ok("Supervisor registerd with id " + saved.getWorkerId());
+                return ResponseEntity.ok("Worker registerd with id " + saved.getWorkerId());
             }
             workerService.deleteWorker(saved.getWorkerId());
             return (ResponseEntity<?>) ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR);

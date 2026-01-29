@@ -78,12 +78,9 @@ public class AuthController {
             supervisor.setPassword(encoder.encode(password));
             Supervisor saved = supervisorService.saveSupervisor(supervisor);
 
-           String id = supervisorService.saveEmbeddings(file,saved.getSupervisorId(),saved.getSupervisorId());
+            return ResponseEntity.ok("Supervisor registerd with id " + saved.getSupervisorId());
 
-            if(id != null) {
-                return ResponseEntity.ok("Supervisor registerd with id " + saved.getSupervisorId());
-            }
-            return (ResponseEntity<?>) ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR);
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error saving supervisor: " + e.getMessage());

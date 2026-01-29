@@ -5,17 +5,27 @@ import com.helmet_detection.helmet_detection_backend.Repository.WorkersRepositor
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class WorkerService {
     private final WorkersRepository workersRepository;
 
-    public Workers registerWorker(Workers worker){
+    public Workers registerWorker(Workers worker) {
         return workersRepository.save(worker);
     }
-    public void deleteWorker(Long id)
-    {
+
+    public void deleteWorker(Long id) {
         workersRepository.deleteById(id);
     }
 
+
+    public Optional<Workers> findByEmail(String email) {
+        return workersRepository.findByEmail(email);
+    }
+
+    public Optional<Workers> getByWorkerId(Long workerId){
+        return workersRepository.findById(workerId);
+    }
 }

@@ -61,4 +61,9 @@ public class SupervisorService {
         return response.getBody().getId();
     }
 
+    public boolean existEmail(String email) {
+        return supervisorRepository.existsByEmail(email);
+    }
+
+
 }

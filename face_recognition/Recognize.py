@@ -12,17 +12,21 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
-
-VIOLATION_THRESHOLD = timedelta(minutes=1)
+import asyncio
+import httpx
 
 violation_tracker = {
   
 }
 
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
 
 load_dotenv()
+
+print(os.getenv("VIOLATION_THRESHOLD"))
+VIOLATION_THRESHOLD = timedelta(minutes=int(os.getenv("VIOLATION_THRESHOLD")))
+
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
 
 EMBED_DIM = int(os.getenv("EMBED_DIM", 512))
 SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", 0.35))
@@ -42,7 +46,7 @@ face_model.prepare(ctx_id=-1, det_size=(640, 640))
 print("InsightFace loaded")
 
 SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD"))
-ATTENDANCE_URL = os.getenv("ATTENDANCE_URL")
+VIOLATION_URL = os.getenv("VIOLATION_URL")
 _index_lock = threading.Lock()
 _worker_id = []
 _supervisor_id = []
@@ -50,37 +54,49 @@ _worker_names = []
 _worker_email = []
 _supervisor_email = []
 embeddings = []
+Supervisor = None
+Token = None
 _faiss_index: faiss.Index = None
 _index_loaded = False
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
-def send_violation_email(name, user_id, score,v_email):
-    msg = MIMEText(
-        f"""
-Helmet violation detected.
-
-Name: {name}
-User ID: {user_id}
-Confidence: {score:.2f}
-
-Violation duration exceeded 3 minutes.
-"""
-    )
-
-    msg["Subject"] = "Safety Helmet Violation Alert"
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = v_email
-
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(SENDER_EMAIL, SENDER_PASSWORD)
-            server.send_message(msg)
-
-    print(f"Email sent for {name}")
+def set_Supervisor(supervisor,token):
+    global Supervisor, _faiss_index,_index_loaded,Token
+    Supervisor = supervisor
+    Token = token
+    load_data_from_db(Supervisor)
+    _faiss_index = load_faiss_index(embeddings)
+    _index_loaded = True
 
 
-def load_data_from_db():
+async def send_violation_email(worker_id, score):
+    try:
+        data = {
+            "workerId": int(worker_id),
+            "score": float(score)
+        }
+        print("calling",VIOLATION_URL)
+
+        headers = {
+            "Authorization": f"Bearer {Token}",
+            "Content-Type": "application/json"
+        }
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                VIOLATION_URL,
+                json=data,
+                headers=headers
+            )
+
+        print("Spring response:", resp.status_code, resp.text)
+
+    except Exception as e:
+        print("HTTP ERROR:", e)
+
+
+def load_data_from_db(supervisor_id):
     conn = psycopg2.connect(
     host=os.getenv("DB_HOST"),
     database=os.getenv("PG_DATABASE"),
@@ -97,8 +113,6 @@ def load_data_from_db():
 
     cursor = conn.cursor()
 
-    supervisorId = 1;
-
     query = """
     SELECT w.worker_id,w.full_name,w.email,w.supervisor_id,s.email
     FROM workers w join supervisor s
@@ -106,7 +120,7 @@ def load_data_from_db():
     WHERE w.supervisor_Id = %s;
     """
     
-    cursor.execute(query, (supervisorId,))
+    cursor.execute(query, (supervisor_id,))
     rows = cursor.fetchall()
 
     for row in rows:
@@ -154,9 +168,6 @@ def load_faiss_index(embeddings_list):
 
     return index
 
-load_data_from_db()
-_faiss_index = load_faiss_index(embeddings)
-_index_loaded = True
 
 
 def search_embedding(embedding):
@@ -191,7 +202,7 @@ def face_inside_head(face_box, head_box):
 
     return hx1 <= cx <= hx2 and hy1 <= cy <= hy2
 
-def process_helmet_detection(frame, detections):
+def process_helmet_detection(frame, detections,loop):
 
     heads = []
     helmets = []
@@ -237,42 +248,41 @@ def process_helmet_detection(frame, detections):
 
         if uid not in violation_tracker:
             violation_tracker[uid] = {
-                "start_time": now,
-                "alert_sent": False
+                "start_time": now
             }
             continue
 
         elapsed = now - violation_tracker[uid]["start_time"]
         print(elapsed)
 
-        if elapsed >= VIOLATION_THRESHOLD and not violation_tracker[uid]["alert_sent"]:
-            send_violation_email(
-                v["name"],
+        if elapsed >= VIOLATION_THRESHOLD:
+            asyncio.run_coroutine_threadsafe(send_violation_email(
                 uid,
-                v["score"],
-                v['email']
-            )
+                v["score"]),loop)
             violation_tracker[uid]["alert_sent"] = True
+            violation_tracker[uid] = {
+                "start_time": now
+            }
 
         
-        for h in heads:
-            x1, y1, x2, y2 = map(int, (h["x1"], h["y1"], h["x2"], h["y2"]))
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-            cv2.putText(frame, "NO HELMET", (x1, y1 - 6),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+    for h in heads:
+        x1, y1, x2, y2 = map(int, (h["x1"], h["y1"], h["x2"], h["y2"]))
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        cv2.putText(frame, "NO HELMET", (x1, y1 - 6),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
-        # Draw helmets
-        for h in helmets:
-            x1, y1, x2, y2 = map(int, (h["x1"], h["y1"], h["x2"], h["y2"]))
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(frame, "HELMET", (x1, y1 - 6),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255,0), 2)
+    # Draw helmets
+    for h in helmets:
+        x1, y1, x2, y2 = map(int, (h["x1"], h["y1"], h["x2"], h["y2"]))
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.putText(frame, "HELMET", (x1, y1 - 6),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255,0), 2)
             
-        active_user_ids = {v["user_id"] for v in violations if v["user_id"]}
+    active_user_ids = {v["user_id"] for v in violations if v["user_id"]}
 
-        for uid in list(violation_tracker.keys()):
-            if uid not in active_user_ids:
-                del violation_tracker[uid]
+    for uid in list(violation_tracker.keys()):
+        if uid not in active_user_ids:
+            del violation_tracker[uid]
 
 
 

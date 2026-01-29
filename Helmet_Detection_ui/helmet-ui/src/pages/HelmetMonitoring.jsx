@@ -15,10 +15,7 @@ export default function HelmetMonitoring() {
   };
 }, []);
 
-  
-
-  const WS_URL = "ws://localhost:8003/ws/helmet-monitoring";
-
+  const WS_URL = `ws://localhost:8003/ws/helmet-monitoring?token=${sessionStorage.getItem("token")}`;
   const start = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   videoRef.current.srcObject = stream;

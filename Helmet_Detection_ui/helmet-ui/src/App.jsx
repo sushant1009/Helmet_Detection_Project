@@ -34,6 +34,14 @@ export default function App() {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute allowedRoles={["SUPERVISOR"]}>
+               <Dashboard />
+              </PrivateRoute>
+            }
+          />
           
             <Route path="/register" element={<PrivateRoute allowedRoles={["SUPERVISOR"]}>
                <Register />

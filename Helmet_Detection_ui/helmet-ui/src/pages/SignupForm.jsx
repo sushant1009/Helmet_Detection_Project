@@ -12,6 +12,7 @@ export default function Register() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [otp, setOtp] = useState("");
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
@@ -46,7 +47,10 @@ export default function Register() {
     if(Object.keys(validationErrors).length === 0)
     {
     try {
-      await axios.post("http://localhost:8001/send-otp", { email: formData.email });
+      await api.post(
+  `api/auth/send-otp?email=${encodeURIComponent(formData.email)}`
+);    
+      setEmail(formData.email)
       setOtpSent(true);
       setMessage("OTP sent to your email.");
     } catch {
@@ -57,18 +61,15 @@ export default function Register() {
 
   const verifyOtp = async () => {
     try {
-      const res = await axios.post("http://localhost:8001/verify-otp", {
-        email: formData.email,
-        otp,
-      });
-      if (res.data.success) {
-        setOtpVerified(true);
+      const res =  await api.post("api/auth/verify-otp", null, { params: { email, otp } });
+      if (res.status == 200) {
+        setOtpVerified(true)
         setMessage("Email verified successfully!");
       } else {
         setMessage("Invalid OTP. Try again.");
       }
     } catch {
-      setMessage("Error verifying OTP.");
+      setMessage("Error while verifying OTP.");
     }
   };
 
@@ -254,7 +255,7 @@ data.append("file", imageFile);
               onChange={(e) => setOtp(e.target.value)}
               className="form-control d-inline w-auto me-2"
             />
-            <button type="button" onClick={verifyOtp} className="btn btn-success">
+            <button type="button" onClick={verifyOtp} className="btn btn-success" disabled={otpVerified}>
               Verify OTP
             </button>
           </div>

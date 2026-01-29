@@ -11,4 +11,7 @@ public interface SupervisorRepository extends JpaRepository<Supervisor,Long> {
     @Override
     Optional<Supervisor> findById(Long supervisorId);
     Optional<Supervisor> findByEmail(String email);
+
+
+    boolean existsByEmail(String email);
 }

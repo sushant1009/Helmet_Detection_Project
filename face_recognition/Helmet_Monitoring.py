@@ -4,17 +4,16 @@ import base64
 import traceback
 import cv2
 import numpy as np
+import psycopg2
+import jwt
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 from fastapi.middleware.cors import CORSMiddleware
 from model_loader import load_model
 import asyncio
-from Recognize import process_helmet_detection
+from Recognize import process_helmet_detection,set_Supervisor
+from dotenv import load_dotenv
 
-
-
-
-save_dir = "heads/"
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -23,10 +22,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+load_dotenv()
 
 model = None
 device = None
 frame_queue = asyncio.Queue(maxsize=7)
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
 
 @app.on_event("startup")
 def startup_event():
@@ -53,21 +55,79 @@ async def recognize_frame_and_search(frame):
 
     return detections
 
+def verify_jwt(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload, None
+
+    except jwt.ExpiredSignatureError:
+        return None, "Token expired"
+
+    except jwt.InvalidSignatureError:
+        return None, "Invalid token signature"
+
+    except jwt.InvalidTokenError:
+        return None, "Invalid token"
+
+
 
 @app.websocket("/ws/helmet-monitoring")
 async def websocket_attendance(ws: WebSocket):
+    token = ws.query_params.get("token")
+
+    if not token:
+        await ws.accept()
+        await ws.send_json({"error": "Missing token"})
+        await ws.close(code=1008)
+        return
+
+    payload, error = verify_jwt(token)
+    if not payload:
+        await ws.accept()
+        await ws.send_json({"error": error})
+        await ws.close(code=1008)
+        return
+
     await ws.accept()
-    print("WebSocket connection accepted")
+    print("WebSocket authenticated:", payload)
+
+    
+    conn = psycopg2.connect(
+        host=os.getenv("DB_HOST"),
+        database=os.getenv("PG_DATABASE"),
+        user=os.getenv("PG_USERNAME"),
+        password=os.getenv("PG_PASSWORD"),
+        port=os.getenv("PG_PORT")
+    )
+
+    cursor = conn.cursor()
+
+    query = """
+    SELECT supervisor_id
+    FROM supervisor
+    WHERE email = %s;
+    """
+
+    cursor.execute(query, (payload['sub'],))
+    row = cursor.fetchone()
+
+    if not row:
+        await ws.send_json({"error": "Invalid Supervisor"})
+        await ws.close(code=1008)
+        return
+        
+    supervisor_id = row[0]
+    set_Supervisor(supervisor_id,token)
+    print("Supervisor ID:", supervisor_id)
 
     async def frame_processor():
+        loop = asyncio.get_running_loop()
         while True:
             frame = await frame_queue.get()
-
             try:
                 detections = await recognize_frame_and_search(frame)
-
                 frame, helmet_data = await asyncio.to_thread(
-                    process_helmet_detection, frame, detections
+                    process_helmet_detection, frame, detections,loop
                 )
 
                 _, buffer = cv2.imencode(".jpg", frame)
@@ -91,11 +151,10 @@ async def websocket_attendance(ws: WebSocket):
 
     try:
         while True:
-            # ---------- RECEIVE ----------
             try:
                 raw = await ws.receive_text()
             except WebSocketDisconnect:
-                print("⚠️ Client disconnected")
+                print("Client disconnected")
                 break
 
             try:
@@ -122,25 +181,18 @@ async def websocket_attendance(ws: WebSocket):
 
             if frame_queue.full():
                 try:
-                    frame_queue.get_nowait() 
+                    frame_queue.get_nowait()
                     print("Extra Frames dropping")
                 except asyncio.QueueEmpty:
                     pass
 
             await frame_queue.put(frame)
 
-    except Exception as e:
-        print("❌ WebSocket fatal error:", e)
-        traceback.print_exc()
-
     finally:
         processor_task.cancel()
-        try:
-            await ws.close()
-        except:
-            pass
-        print("🔒 WebSocket closed cleanly")
+        await ws.close()
+        print("WebSocket closed cleanly")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("Helmet_Monitoring:app", host="0.0.0.0", port=8003, reload=True)
+    uvicorn.run("Helmet_Monitoring:app", host="0.0.0.0", port=8003, reload=False)

@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/worker/**").hasRole("SUPERVISOR")
                         .requestMatchers("/api/attendance/**").hasRole("SUPERVISOR")
+                        .requestMatchers("/api/dashboard/**").hasRole("SUPERVISOR")
                         .anyRequest().authenticated()
                 )
 

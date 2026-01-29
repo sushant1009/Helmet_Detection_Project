@@ -9,8 +9,8 @@ import traceback
 import asyncio
 import cv2
 import jwt
-# import httpx
 import uvicorn
+import httpx
 import numpy as np
 import insightface
 from dotenv import load_dotenv
@@ -46,10 +46,11 @@ _supervisor_email = []
 embeddings = []
 _faiss_index: faiss.Index = None
 _index_loaded = False
+Supervisor = None
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
-def load_data_from_db():
+def load_data_from_db(supervisorId):
     conn = psycopg2.connect(
     host=os.getenv("DB_HOST"),
     database=os.getenv("PG_DATABASE"),
@@ -66,7 +67,6 @@ def load_data_from_db():
 
     cursor = conn.cursor()
 
-    supervisorId = 1;
 
     query = """
     SELECT w.worker_id,w.full_name,w.email,w.supervisor_id,s.email
@@ -130,51 +130,10 @@ def load_faiss_index(embeddings_list):
 
     return index
 
-load_data_from_db()
-_faiss_index = load_faiss_index(embeddings)
-_index_loaded = True
 
 from fastapi import Header, HTTPException, Depends
 
-@app.post("/attendance/reload_index")
-def reload_index(authorization: str = Header(...)):
-    global embeddings, _faiss_index
-    global _worker_id, _worker_names, _worker_email
-    global _supervisor_id, _supervisor_email
 
-    # 1. Extract token
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid Authorization header")
-
-    token = authorization.split(" ")[1]
-
-    # 2. Verify token
-    payload, _ = verify_jwt(token)
-    print(payload)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    role = payload.get("role")
-    if role != "SUPERVISOR":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-
-    # 4. Clear old data
-    embeddings.clear()
-    _worker_id.clear()
-    _worker_names.clear()
-    _worker_email.clear()
-    _supervisor_id.clear()
-    _supervisor_email.clear()
-
-    # 5. Reload from DB
-    load_data_from_db()
-
-    # 6. Rebuild FAISS
-    _faiss_index = load_faiss_index(embeddings)
-
-    return {"message": "Index reloaded successfully"}
-    
 def _search_embedding(emb: np.ndarray, bbox: np.ndarray) -> dict:
     global _faiss_index, _worker_id, _worker_names
 
@@ -191,11 +150,8 @@ def _search_embedding(emb: np.ndarray, bbox: np.ndarray) -> dict:
         D, I = _faiss_index.search(emb.reshape(1, -1).astype('float32'), 1)
         score = float(D[0][0])
         idx = int(I[0][0])
-        print(score," ",idx)
-        # default
         label = "Unknown"
         user_id = None
-
         if 0 <= idx < len(_worker_id):
             if score <= SIMILARITY_THRESHOLD:
                 label = _worker_names[idx]
@@ -273,6 +229,34 @@ async def websocket_attendance(ws: WebSocket):
 
     await ws.accept()
     print("WebSocket authenticated:", payload)
+    conn = psycopg2.connect(
+    host=os.getenv("DB_HOST"),
+    database=os.getenv("PG_DATABASE"),
+    user=os.getenv("PG_USERNAME"),
+    password=os.getenv("PG_PASSWORD"),
+    port=os.getenv("PG_PORT")  
+     
+)  
+    
+    cursor = conn.cursor()
+
+    query = """
+    SELECT supervisor_id
+    FROM supervisor
+    WHERE email = %s;
+    """
+
+    cursor.execute(query, (payload['sub'],))
+    row = cursor.fetchone()
+    global Supervisor,_faiss_index, _index_loaded
+    if row:
+        Supervisor = row[0]
+    else:
+        Supervisor = None
+    print(Supervisor)
+    load_data_from_db(Supervisor)
+    _faiss_index = load_faiss_index(embeddings)
+    _index_loaded = True
 
     last_seen = {}
     THRESHOLD = timedelta(minutes=10) # Min. time between attendance marking
@@ -335,7 +319,7 @@ async def websocket_attendance(ws: WebSocket):
                 label = det.get("label")
                 score = det.get("score", 0.0)
                 user_id = det.get("user_id")
-                if label and label != "Unknown" and  score >= SIMILARITY_THRESHOLD:
+                if label and label != "Unknown" and  score <= SIMILARITY_THRESHOLD:
                     now = datetime.now()
 
                     if user_id not in last_seen:
@@ -397,6 +381,46 @@ async def websocket_attendance(ws: WebSocket):
             await ws.close()
         except:
             pass
+        
+@app.post("/attendance/reload_index")
+def reload_index(authorization: str = Header(...)):
+    global embeddings, _faiss_index
+    global _worker_id, _worker_names, _worker_email
+    global _supervisor_id, _supervisor_email
+
+    # 1. Extract token
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid Authorization header")
+
+    token = authorization.split(" ")[1]
+
+    # 2. Verify token
+    payload, _ = verify_jwt(token)
+    print(payload)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    role = payload.get("role")
+    if role != "SUPERVISOR":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+
+    # 4. Clear old data
+    embeddings.clear()
+    _worker_id.clear()
+    _worker_names.clear()
+    _worker_email.clear()
+    _supervisor_id.clear()
+    _supervisor_email.clear()
+
+    # 5. Reload from DB
+    load_data_from_db(Supervisor)
+
+    # 6. Rebuild FAISS
+    _faiss_index = load_faiss_index(embeddings)
+
+    return {"message": "Index reloaded successfully"}
+    
         
 
 if __name__ == "__main__":

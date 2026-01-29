@@ -11,6 +11,7 @@ export default function Register() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [otp, setOtp] = useState("");
+  const [email,setEmail] = useState("")
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   
@@ -41,7 +42,10 @@ export default function Register() {
     if(Object.keys(validationErrors).length === 0)
     {
     try {
-      await axios.post("http://localhost:8001/send-otp", { email: formData.email });
+     await api.post(
+  `api/auth/send-otp?email=${encodeURIComponent(formData.email)}`
+);  
+      setEmail(formData.email)
       setOtpSent(true);
       setMessage("OTP sent to your email.");
     } catch {
@@ -52,18 +56,16 @@ export default function Register() {
 
   const verifyOtp = async () => {
     try {
-      const res = await axios.post("http://localhost:8001/verify-otp", {
-        email: formData.email,
-        otp,
-      });
-      if (res.data.success) {
+      const res =  await api.post("api/auth/verify-otp", null, { params: { email, otp } });
+      console.log(res)
+      if(res.status == 200) {
         setOtpVerified(true);
         setMessage("Email verified successfully!");
       } else {
         setMessage("Invalid OTP. Try again.");
       }
     } catch {
-      setMessage("Error verifying OTP.");
+      setMessage("Error while verifying OTP.");
     }
   };
 
@@ -71,9 +73,9 @@ export default function Register() {
     e.preventDefault();
     const validationErrors = validateForm(formData);
     setErrors(validationErrors);
-    // if (!otpVerified) return setMessage("Please verify your email first.");
+    if (!otpVerified) return setMessage("Please verify your email first.");
     if (!capturedImage) return setMessage("Please capture a face image.");
-    // if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
+    if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
     {
     setLoading(true);
     const blob = await (await fetch(capturedImage)).blob();
@@ -102,6 +104,7 @@ data.append("file", imageFile);
   setCapturedImage(null)
   setOtpSent(false)
   setOtpVerified(false)
+  setEmail("")
     } catch (err) {
       setMessage("Error registering user.");
       console.error(err);
@@ -190,7 +193,7 @@ data.append("file", imageFile);
 
         {/* OTP Section */}
         {!otpSent ? (
-          <button type="button" onClick={sendOtp} className="btn btn-primary mt-2">
+          <button type="button" onClick={sendOtp} className="btn btn-primary mt-2" disabled={otpVerified}>
             Send OTP
           </button>
         ) : !otpVerified ? (

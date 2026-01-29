@@ -22,6 +22,10 @@ public class Attendance {
     @JoinColumn(name = "worker_id", referencedColumnName = "workerId", nullable = false)
     private Workers worker;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supervisor_id", referencedColumnName = "supervisorId", nullable = false)
+    private Supervisor supervisor;
+
     @Column(nullable = false)
     private LocalDate date;
 
