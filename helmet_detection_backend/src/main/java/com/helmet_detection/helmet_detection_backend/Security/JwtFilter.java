@@ -1,6 +1,5 @@
 package com.helmet_detection.helmet_detection_backend.Security;
 
-import com.helmet_detection.helmet_detection_backend.Service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +20,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private CustomUserDetailsService userDetailsService;
+    private CustomUserDetails.CustomUserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(

@@ -1,9 +1,9 @@
 package com.helmet_detection.helmet_detection_backend.Service;
 
 import com.helmet_detection.helmet_detection_backend.DTO.DashboardStats;
-import com.helmet_detection.helmet_detection_backend.Repository.AttendanceRepository;
-import com.helmet_detection.helmet_detection_backend.Repository.ViolationsRepository;
-import com.helmet_detection.helmet_detection_backend.Repository.WorkersRepository;
+import com.helmet_detection.helmet_detection_backend.Repository.Jpa.AttendanceRepository;
+import com.helmet_detection.helmet_detection_backend.Repository.Jpa.ViolationsRepository;
+import com.helmet_detection.helmet_detection_backend.Repository.Jpa.WorkersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

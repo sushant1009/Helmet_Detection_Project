@@ -6,5 +6,5 @@ import java.util.List;
 
 @Data
 public class EmbeddingResponse {
-    private String id;
+    private List<Double> embedding;
 }

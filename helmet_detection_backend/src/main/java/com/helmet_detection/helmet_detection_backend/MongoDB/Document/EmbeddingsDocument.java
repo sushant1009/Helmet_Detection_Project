@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -19,8 +18,8 @@ import java.util.List;
 public class EmbeddingsDocument {
     @Id
     private String id;
-    private String workerId;
-    private String supervisorId;
+    private Long workerId;
+    private Long supervisorId;
     private List<Double> embeddings;
     @JsonIgnore
     private Date createdAt =  new Date();

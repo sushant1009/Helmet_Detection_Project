@@ -3,11 +3,9 @@ package com.helmet_detection.helmet_detection_backend.Service;
 import com.helmet_detection.helmet_detection_backend.Entity.Attendance;
 import com.helmet_detection.helmet_detection_backend.Entity.Supervisor;
 import com.helmet_detection.helmet_detection_backend.Entity.Workers;
-import com.helmet_detection.helmet_detection_backend.Repository.AttendanceRepository;
-import com.helmet_detection.helmet_detection_backend.Repository.WorkersRepository;
+import com.helmet_detection.helmet_detection_backend.Repository.Jpa.AttendanceRepository;
+import com.helmet_detection.helmet_detection_backend.Repository.Jpa.WorkersRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

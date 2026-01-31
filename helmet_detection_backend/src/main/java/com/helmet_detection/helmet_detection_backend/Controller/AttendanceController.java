@@ -2,7 +2,6 @@ package com.helmet_detection.helmet_detection_backend.Controller;
 
 import com.helmet_detection.helmet_detection_backend.Entity.Attendance;
 import com.helmet_detection.helmet_detection_backend.Entity.Supervisor;
-import com.helmet_detection.helmet_detection_backend.Repository.SupervisorRepository;
 import com.helmet_detection.helmet_detection_backend.Service.AttendanceService;
 import com.helmet_detection.helmet_detection_backend.Service.SupervisorService;
 import lombok.RequiredArgsConstructor;
@@ -11,10 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
