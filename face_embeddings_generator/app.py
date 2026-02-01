@@ -38,5 +38,3 @@ async def generate_embeddings(file: UploadFile = File(...), workerId: str = Form
 
     
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
