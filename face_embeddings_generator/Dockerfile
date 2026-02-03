@@ -1,17 +1,38 @@
-FROM python:3.10-slim
+FROM ubuntu:22.04
 
-WORKDIR /app
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
 
-# System libs needed for opencv & insightface
+# Install Python and system dependencies
 RUN apt-get update && apt-get install -y \
-    libgl1 \
+    python3.10 \
+    python3-pip \
+    python3.10-dev \
+    build-essential \
+    libopenblas-dev \
+    libgomp1 \
+    libgl1-mesa-glx \
     libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libfontconfig1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+# Set python3.10 as default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
 
+# Copy requirements and install remaining packages
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy application code
+COPY . /app
+WORKDIR /app
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Expose port
+EXPOSE 8001
+
+# Run the application
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"]

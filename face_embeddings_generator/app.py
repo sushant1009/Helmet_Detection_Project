@@ -1,6 +1,5 @@
-from fastapi import FastAPI, UploadFile, Form, BackgroundTasks, HTTPException,File
+from fastapi import FastAPI, UploadFile, Form,HTTPException,File
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
 import numpy as np
 import cv2
 from GenerateEncoding import GenerateEmbeddings
@@ -30,7 +29,7 @@ async def generate_embeddings(file: UploadFile = File(...), workerId: str = Form
     if img is None:
         raise HTTPException(status_code=400, detail="Could not read image")
 
-    embedding = embeddings_Generator.generate_Embeddings_img(img)
+    embedding = embeddings_Generator.generate_embeddings_img(img)
    
     return {
         "embedding": embedding.tolist()
