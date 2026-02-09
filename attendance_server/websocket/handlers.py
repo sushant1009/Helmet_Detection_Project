@@ -10,6 +10,9 @@ from fastapi import WebSocket
 from services.face_recognition import recognize_frame_and_search
 from services.attendance import mark_attendance
 from config import FRAME_QUEUE_MAXSIZE, SIMILARITY_THRESHOLD
+from utils.logger import setup_logger
+
+logger = setup_logger("websocket_handlers")
 
 async def frame_producer(ws: WebSocket, queue: asyncio.Queue):
     """Receive frames from WebSocket and add to queue"""
@@ -20,12 +23,12 @@ async def frame_producer(ws: WebSocket, queue: asyncio.Queue):
             try:
                 raw = await ws.receive_text()
             except Exception as e:
-                print(f"Producer: WebSocket read ended — {e}")
+                logger.info(f"Producer: WebSocket read ended — {e}")
                 break
 
             if queue.full():
                 dropped_count += 1
-                print(f"Producer: queue full — frame dropped (total: {dropped_count})")
+                logger.info(f"Producer: queue full — frame dropped (total: {dropped_count})")
                 continue
 
             await queue.put(raw)
@@ -48,7 +51,7 @@ async def frame_consumer(
         raw = await queue.get()
 
         if raw is None:
-            print("Consumer: received sentinel — shutting down")
+            logger.info("Consumer: received sentinel — shutting down")
             break
 
         # Parse JSON
@@ -59,6 +62,7 @@ async def frame_consumer(
 
         img_b64 = data.get("image")
         if not img_b64:
+            logger.warning("Consumer: no image field in received data")
             await ws.send_text(json.dumps({"error": "no image field"}))
             continue
 
@@ -67,6 +71,7 @@ async def frame_consumer(
             try:
                 img_b64 = img_b64.split(",")[1]
             except Exception:
+                logger.warning("Consumer: failed to split data URI")
                 await ws.send_text(json.dumps({"error": "bad image format"}))
                 continue
 
@@ -77,9 +82,11 @@ async def frame_consumer(
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             
             if frame is None:
+                logger.warning("Consumer: failed to decode image")
                 await ws.send_text(json.dumps({"error": "could not decode image"}))
                 continue
         except Exception:
+            logger.warning(f"Consumer: base64 decoding failed — {e}")
             await ws.send_text(json.dumps({"error": "bad base64"}))
             continue
 
@@ -87,7 +94,7 @@ async def frame_consumer(
         try:
             detections = await recognize_frame_and_search(frame, search_callback)
         except Exception as e:
-            print(f"Error during recognition: {e}")
+            logger.error(f"Error during recognition: {e}")
             traceback.print_exc()
             await ws.send_text(json.dumps({"error": "recognition_failed"}))
             continue
@@ -103,14 +110,12 @@ async def frame_consumer(
 
                 if user_id not in last_seen:
                     last_seen[user_id] = now
-                    await mark_attendance(user_id, token)
-                    print(f"First entry for user {user_id}")
+                    await mark_attendance(user_id, frame ,token)
                 else:
                     diff = now - last_seen[user_id]
                     if diff > THRESHOLD:
                         last_seen[user_id] = now
-                        await mark_attendance(user_id, token)
-                        print(f"Updated entry for user {user_id}")
+                        await mark_attendance(user_id, frame, token)
 
         # Draw bounding boxes
         for det in detections:

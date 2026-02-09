@@ -3,12 +3,15 @@ import numpy as np
 import asyncio
 from typing import List
 from insightface.app import FaceAnalysis
+from utils.logger import setup_logger
+
+logger = setup_logger("face_recognition")
 
 # Initialize face model
-print("Loading InsightFace model...")
+logger.info("Loading InsightFace model...")  
 face_model = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
 face_model.prepare(ctx_id=-1, det_size=(640, 640))
-print("InsightFace ready")
+logger.info("InsightFace ready")
 
 async def recognize_frame_and_search(frame_bgr: np.ndarray, search_callback) -> List[dict]:
     """

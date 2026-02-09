@@ -5,6 +5,9 @@ from typing import List, Dict, Optional
 from database.postgres import get_db_cursor
 from database.mongodb import get_embeddings_collection
 from config import SIMILARITY_THRESHOLD
+from utils.logger import setup_logger
+
+
 
 class FaissIndexService:
     def __init__(self):
@@ -18,6 +21,8 @@ class FaissIndexService:
         self._faiss_index: Optional[faiss.Index] = None
         self._index_loaded = False
         self._supervisor = None
+        self.logger = setup_logger("faiss_service")
+        self.logger.info("FAISS Index Service initialized")
 
     async def load_data_from_db(self, supervisor_id: int) -> Optional[Dict]:
         """Load worker data and embeddings from databases"""
@@ -27,6 +32,7 @@ class FaissIndexService:
         worker_emails = []
         supervisor_ids = []
         supervisor_emails = []
+        global super
         
         try:
             # PostgreSQL query
@@ -39,14 +45,14 @@ class FaissIndexService:
                 """
                 cursor.execute(query, (supervisor_id,))
                 rows = cursor.fetchall()
-            
+                self.logger.info(f"Fetched {len(rows)} workers for supervisor_id: {supervisor_id}")
             # MongoDB query
             embeddings_col = get_embeddings_collection()
-            embedding_docs = embeddings_col.find(
+            embedding_docs = list(embeddings_col.find(
                 {"supervisorId": int(supervisor_id)},
                 {"workerId": 1, "embeddings": 1, "_id": 0}
-            )
-            
+            ))
+            self.logger.info(f"Fetched {len(embedding_docs)} embedding documents for supervisor_id: {supervisor_id}")
             embeddings_dict = {doc["workerId"]: doc["embeddings"] for doc in embedding_docs}
             
             # Match workers with embeddings
@@ -61,7 +67,7 @@ class FaissIndexService:
                     supervisor_ids.append(row[3])
                     supervisor_emails.append(row[4])
                 else:
-                    print(f"No embedding found for worker_id: {worker_id}")
+                    self.logger.warning(f"No embedding found for worker_id: {worker_id}")
             
             return {
                 "embeddings": embeddings,
@@ -73,12 +79,13 @@ class FaissIndexService:
             }
             
         except Exception as e:
-            print(f"Error loading data: {str(e)}")
+            self.logger.error(f"Error loading data: {str(e)}")
             return None
 
     def build_faiss_index(self, embeddings_list: List[np.ndarray]) -> faiss.Index:
         """Build FAISS index from embeddings"""
         if len(embeddings_list) == 0:
+            self.logger.error("No embeddings found to build FAISS index")
             raise ValueError("No embeddings found to build FAISS index")
 
         vectors = np.array(embeddings_list).astype("float32")
@@ -88,7 +95,7 @@ class FaissIndexService:
         index = faiss.IndexFlatIP(dim)
         index.add(vectors)
 
-        print(f"FAISS index loaded with {index.ntotal} vectors")
+        self.logger.info(f"FAISS index loaded with {index.ntotal} vectors")
         return index
 
     async def initialize_index(self, supervisor_id: int):
@@ -96,6 +103,7 @@ class FaissIndexService:
         data = await self.load_data_from_db(supervisor_id)
         
         if not data or len(data["embeddings"]) == 0:
+            self.logger.warning(f"No data found for supervisor_id: {supervisor_id}")
             raise ValueError("No data found for supervisor")
         
         self._embeddings = data["embeddings"]
@@ -112,6 +120,7 @@ class FaissIndexService:
     async def reload_index(self):
         """Reload FAISS index with current supervisor data"""
         if self._supervisor is None:
+            self.logger.error("No supervisor set for reloading index")
             raise ValueError("No supervisor set")
         
         # Clear old data
@@ -121,9 +130,12 @@ class FaissIndexService:
         self._worker_email.clear()
         self._supervisor_id.clear()
         self._supervisor_email.clear()
+        self.logger.info("Cleared old FAISS index data")
         
         # Reload
         await self.initialize_index(self._supervisor)
+        self.logger.info("FAISS index reloaded successfully")
+        
 
     def search_embedding(self, emb: np.ndarray, bbox: np.ndarray) -> dict:
         """Search for face embedding in FAISS index"""
@@ -144,7 +156,6 @@ class FaissIndexService:
             score = float(D[0][0])
             idx = int(I[0][0])
             
-            print(f"Score: {score:.4f}, Threshold: {SIMILARITY_THRESHOLD}")
             
             label = "Unknown"
             user_id = None
