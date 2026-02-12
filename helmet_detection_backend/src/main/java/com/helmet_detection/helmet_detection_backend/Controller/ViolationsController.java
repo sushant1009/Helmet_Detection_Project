@@ -4,10 +4,7 @@ import com.helmet_detection.helmet_detection_backend.DTO.VoilationRequest;
 import com.helmet_detection.helmet_detection_backend.Entity.Supervisor;
 import com.helmet_detection.helmet_detection_backend.Entity.Violations;
 import com.helmet_detection.helmet_detection_backend.Entity.Workers;
-import com.helmet_detection.helmet_detection_backend.Service.EmailService;
-import com.helmet_detection.helmet_detection_backend.Service.SupervisorService;
-import com.helmet_detection.helmet_detection_backend.Service.ViolationsService;
-import com.helmet_detection.helmet_detection_backend.Service.WorkerService;
+import com.helmet_detection.helmet_detection_backend.Service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +25,7 @@ public class ViolationsController {
     private final ViolationsService violationsService;
     private final SupervisorService supervisorService;
     private final EmailService emailService;
+    private final ImageService imageService;
 
     @PostMapping("/")
     public ResponseEntity<?> saveVoilation(
@@ -54,6 +52,8 @@ public class ViolationsController {
         voilation.setTime(LocalDateTime.now());
 
         voilation = violationsService.saveVoilation(voilation);
+
+        imageService.uploadViolationImage(voilationRequest.getImage(), String.valueOf(voilation.getVoilationId()),voilation.getDate());
 
 String body = "Helmet violation detected.\n worker Id : "+voilationRequest.getWorkerId()+"\nConfidence: "+voilationRequest.getScore()+"\nViolation duration exceeded 5 minutes.\nKindly wear Safety Helmet to avoid any Accidents...\n\t!!! Thank You !!!" ;
 

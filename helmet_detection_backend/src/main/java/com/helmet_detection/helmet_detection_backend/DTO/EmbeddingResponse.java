@@ -6,5 +6,6 @@ import java.util.List;
 
 @Data
 public class EmbeddingResponse {
+    private boolean sucess;
     private List<Double> embedding;
 }

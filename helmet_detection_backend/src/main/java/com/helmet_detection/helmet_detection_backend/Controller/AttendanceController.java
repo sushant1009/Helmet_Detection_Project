@@ -22,7 +22,7 @@ public class AttendanceController {
     private final SupervisorService supervisorService;
 
     @PostMapping("/{id}")
-    public ResponseEntity<?> markAttendance(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<?> markAttendance(@PathVariable("id") Long id, Authentication authentication) {
         try {
             // Get supervisor from authentication email
             String email = authentication.getName();

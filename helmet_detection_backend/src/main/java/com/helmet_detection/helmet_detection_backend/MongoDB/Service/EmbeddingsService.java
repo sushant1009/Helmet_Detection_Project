@@ -3,10 +3,7 @@ package com.helmet_detection.helmet_detection_backend.MongoDB.Service;
 import com.helmet_detection.helmet_detection_backend.DTO.EmbeddingResponse;
 import com.helmet_detection.helmet_detection_backend.MongoDB.Document.EmbeddingsDocument;
 import com.helmet_detection.helmet_detection_backend.Repository.Mongo.EmbeddingsRepository;
-import jakarta.annotation.PostConstruct;
-import lombok.AllArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,28 +13,27 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 
 @Service
-@AllArgsConstructor
 public class EmbeddingsService {
     private final EmbeddingsRepository embeddingsRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
 
-    private MongoTemplate mongoTemplate;
+     @Value("${embeddings.server.url}")
+    private String url;
 
-    @PostConstruct
-    public void checkDb() {
-        System.out.println("Connected DB: " + mongoTemplate.getDb().getName());
+    public EmbeddingsService(EmbeddingsRepository embeddingsRepository, RestTemplate restTemplate) {
+        this.embeddingsRepository = embeddingsRepository;
+        this.restTemplate = restTemplate;
     }
-
-
 
     public String saveEmbeddings(MultipartFile file, Long workerId, Long supervisorId) throws IOException {
 
-        String url = "http://localhost:8001/get-embeddings";
+
 
         // Headers
         HttpHeaders headers = new HttpHeaders();
@@ -52,8 +48,7 @@ public class EmbeddingsService {
             }
 
         });
-        body.add("workerId",workerId);
-        body.add("supervisorId",supervisorId);
+
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity =
                 new HttpEntity<>(body, headers);
@@ -61,7 +56,7 @@ public class EmbeddingsService {
         ResponseEntity<EmbeddingResponse> response =
                 restTemplate.postForEntity(url, requestEntity, EmbeddingResponse.class);
         EmbeddingsDocument embeddingsDocument = new EmbeddingsDocument();
-        System.out.println(response.getBody().getEmbedding());
+        System.out.println("Response "+response);
         embeddingsDocument.setEmbeddings(response.getBody().getEmbedding());
         embeddingsDocument.setWorkerId(workerId);
         embeddingsDocument.setSupervisorId(supervisorId);

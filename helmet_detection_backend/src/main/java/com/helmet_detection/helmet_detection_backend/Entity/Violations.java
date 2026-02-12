@@ -24,7 +24,9 @@ public class Violations {
     private LocalDateTime time;
 
     @Column(nullable = false)
-    private Float Score;
+    private Float score;
+
+    private String filePath;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "worker_id", referencedColumnName = "workerId")

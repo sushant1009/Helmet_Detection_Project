@@ -20,6 +20,7 @@ public class WorkerService {
         return workersRepository.save(worker);
     }
 
+
     public void deleteWorker(Long id) {
         workersRepository.deleteById(id);
     }
@@ -53,4 +54,6 @@ public class WorkerService {
     public boolean existsByAadharNo(String aadhar){
         return workersRepository.existsByAadharNo(aadhar);
     }
+
+
 }

@@ -8,6 +8,7 @@ import com.helmet_detection.helmet_detection_backend.Entity.Supervisor;
 import com.helmet_detection.helmet_detection_backend.MongoDB.Document.EmbeddingsDocument;
 import com.helmet_detection.helmet_detection_backend.Security.JwtUtil;
 import com.helmet_detection.helmet_detection_backend.MongoDB.Service.EmbeddingsService;
+import com.helmet_detection.helmet_detection_backend.Service.ImageService;
 import com.helmet_detection.helmet_detection_backend.Service.SupervisorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
@@ -41,6 +42,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final EmbeddingsService embeddingsService;
+    private final ImageService imageService;
 
 
     @PostMapping(value = "/signup", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -55,15 +57,7 @@ public class AuthController {
             @RequestParam("file") MultipartFile file
     ) {
         try {
-            // 1 Save file
-            String uploadDir = "D:/helmet_photos/";
-            Files.createDirectories(Paths.get(uploadDir));
 
-            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            Path filePath = Paths.get(uploadDir + fileName);
-            Files.write(filePath, file.getBytes());
-
-            // 2 Create Supervisor object
             Supervisor supervisor = new Supervisor();
             supervisor.setFullName(fullName);
             supervisor.setAadharNo(aadharNo);
@@ -71,12 +65,14 @@ public class AuthController {
             supervisor.setDob(dob);
             supervisor.setEmail(email);
             supervisor.setPhoneNo(phoneNo);
-            supervisor.setPhotoPath(filePath.toString());
             supervisor.setCreatedAt(new Date());
 
-            // 3 Encode password (if added later)
             supervisor.setPassword(encoder.encode(password));
             Supervisor saved = supervisorService.saveSupervisor(supervisor);
+            String path = imageService.uploadWorkerImage(file.getBytes(),String.valueOf("SUP"+saved.getSupervisorId()));
+            saved.setPhotoPath(path);
+            System.out.println(path);
+           supervisorService.saveSupervisor(saved);
 
             return ResponseEntity.ok("Supervisor registerd with id " + saved.getSupervisorId());
 

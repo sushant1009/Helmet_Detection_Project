@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.security.Key;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 
 @Component
@@ -27,7 +29,7 @@ public class JwtUtil {
                 .subject(String.valueOf(supervisor.getEmail()))
                 .claim("role", supervisor.getRole())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + (3*3600000)))
+                .expiration(Date.from(Instant.now().plus(Duration.ofHours(3))))
                 .signWith(key)
                 .compact();
     }

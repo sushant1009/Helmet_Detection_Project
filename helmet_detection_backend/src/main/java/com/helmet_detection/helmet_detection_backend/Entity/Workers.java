@@ -39,7 +39,7 @@ public class Workers {
     @JoinColumn(name = "supervisorId")
     private Supervisor supervisor;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String photoPath;
 
     @Column(nullable = false)
