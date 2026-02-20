@@ -14,6 +14,7 @@ import psycopg2
 from pymongo import MongoClient
 from database.postgres import get_db_cursor
 from database.mongodb import get_embeddings_collection, close_mongo_client
+from utils.logger import setup_logger
 
 from config import (
     EMBED_DIM,
@@ -24,6 +25,7 @@ from config import (
     INSIGHTFACE_DET_SIZE,
 )
 
+logger = setup_logger("services.face_recognition")
 
 class FaceRecognitionService:
     """Thread-safe face recognition backed by a FAISS flat inner-product index."""
@@ -49,7 +51,7 @@ class FaceRecognitionService:
             providers=["CPUExecutionProvider"],
         )
         self._face_model.prepare(ctx_id=-1, det_size=INSIGHTFACE_DET_SIZE)
-        print("[FaceRecognitionService] InsightFace model loaded.")
+        logger.info("[FaceRecognitionService] InsightFace model loaded.")
 
     # ── Public helpers ────────────────────────────────────────────────────────
 
@@ -107,7 +109,7 @@ class FaceRecognitionService:
             self._faiss_index = index
             self._index_loaded = True
 
-        print(
+        logger.info(
             f"[FaceRecognitionService] Index rebuilt with {index.ntotal} vectors"
             f" for supervisor_id={supervisor_id}."
         )
@@ -149,7 +151,7 @@ class FaceRecognitionService:
                     worker_names.append(full_name)
                     worker_emails.append(email)
                 else:
-                    print(
+                    logger.warning(
                         f"[FaceRecognitionService] No embedding found for"
                         f" worker_id={w_id}"
                     )

@@ -13,7 +13,12 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from utils.auth import verify_jwt
 from services.camera_session import CameraSession, session_manager, run_frame_processor
 from services.face_recognition import face_service
+from utils.logger import setup_logger
+
+
 router = APIRouter()
+
+logger = setup_logger("api.websocket")
 
 
 @router.websocket("/ws/helmet-monitoring/{camera_id}")
@@ -21,6 +26,7 @@ async def websocket_helmet_monitoring(ws: WebSocket, camera_id: str):
     # ── 1. Authenticate ───────────────────────────────────────────────────────
     token = ws.query_params.get("token")
     await ws.accept()
+    logger.info(f"Camera '{camera_id}' connected with token: {token[:10]}...")
 
     if not token:
         await ws.send_json({"error": "Missing token"})
@@ -43,6 +49,7 @@ async def websocket_helmet_monitoring(ws: WebSocket, camera_id: str):
     # ── 2. Create session ─────────────────────────────────────────────────────
     from api.dependencies import get_yolo_model   # late import to avoid circular
     yolo_model = get_yolo_model()
+    
 
     supervisor_id = payload.get("supervisorId", 0)
     session = CameraSession(
@@ -90,7 +97,7 @@ async def websocket_helmet_monitoring(ws: WebSocket, camera_id: str):
                 await ws.close()
             except Exception:
                 pass
-        print(f"[WS] Camera '{camera_id}' WebSocket closed cleanly.")
+        logger.info(f"[WS] Camera '{camera_id}' WebSocket closed cleanly.")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

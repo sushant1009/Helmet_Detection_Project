@@ -66,3 +66,7 @@ MONGO_DB_NAME: str = _DB_NAME
 # ── WebSocket / frame queue ───────────────────────────────────────────────────
 FRAME_QUEUE_SIZE: int = int(os.getenv("FRAME_QUEUE_SIZE", "7"))
 INSIGHTFACE_DET_SIZE: tuple[int, int] = (640, 640)
+
+#Logging Settings
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+CLEAR_LOGS_ON_STARTUP = os.getenv("CLEAR_LOGS_ON_STARTUP", "true").lower() == "true"

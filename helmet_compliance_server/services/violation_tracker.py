@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import base64
 from datetime import datetime
-
+from utils.logger import setup_logger
 import cv2
 import httpx
 import numpy as np
@@ -21,6 +21,7 @@ from config import (
     VIOLATION_URL,
     MIN_FRAMES_BETWEEN_VIOLATIONS
 )
+logger = setup_logger("services.violation_tracker")
 
 
 class ViolationTracker:
@@ -60,10 +61,6 @@ class ViolationTracker:
             elapsed = now - self._state[uid]["start_time"]
             count = self._state[uid]["violation_count"]
 
-            print(
-                f"[ViolationTracker] camera={self.camera_id} worker={uid}"
-                f" elapsed={elapsed} count={count}"
-            )
 
             if (
                 elapsed >= VIOLATION_THRESHOLD
@@ -80,7 +77,7 @@ class ViolationTracker:
 
             if self._state[uid]["violation_count"] >= MAX_VIOLATIONS_BEFORE_SUPERVISOR_ALERT:
                 self._state[uid]["violation_count"] = 0
-                print(
+                logger.info(
                     f"[ViolationTracker] camera={self.camera_id} worker={uid}"
                     " — supervisor alert threshold reached."
                 )
@@ -113,12 +110,12 @@ class ViolationTracker:
                 resp = await client.post(
                     VIOLATION_URL, json=payload, headers=headers
                 )
-            print(
+            logger.info(
                 f"[ViolationTracker] Notification sent for worker={worker_id}:"
                 f" {resp.status_code}"
             )
         except Exception as exc:
-            print(f"[ViolationTracker] HTTP error for worker={worker_id}: {exc}")
+            logger.warning(f"[ViolationTracker] HTTP error for worker={worker_id}: {exc}")
 
 
 # ── Helper ────────────────────────────────────────────────────────────────────

@@ -125,7 +125,7 @@ def _match_via_crops(frame: np.ndarray, heads: list[dict]) -> list[dict]:
 def _match_via_full_frame(frame: np.ndarray, heads: list[dict]) -> list[dict]:
    
     violations: list[dict] = []
-    faces = face_service.get_faces(frame, enhance=True)
+    faces = face_service.get_faces(frame)
 
     for face in faces:
         fx1, fy1, fx2, fy2 = map(int, face.bbox)

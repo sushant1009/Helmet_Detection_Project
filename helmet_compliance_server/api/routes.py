@@ -14,6 +14,9 @@ from config import PG_DSN
 from services.face_recognition import face_service
 from services.camera_session import session_manager
 from database.postgres import get_db_cursor
+from utils.logger import setup_logger
+
+logger = setup_logger("api.routes")
 
 router = APIRouter(prefix="/helmet-monitoring")
 
@@ -40,11 +43,13 @@ async def reload_index(authorization: str = Header(...)):
     supervisor_email = payload.get("sub")
     supervisor_id = _get_supervisor_id(supervisor_email)
     if supervisor_id is None:
+        logger.warning(f"Supervisor email {supervisor_email} not found in database")
         raise HTTPException(status_code=404, detail="Supervisor not found")
 
     # ── Reload ────────────────────────────────────────────────────────────────
     try:
         count = face_service.reload_for_supervisor(supervisor_id)
+        logger.info(f"Reloaded index for supervisor_id={supervisor_id}, workers_loaded={count}")
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 
@@ -78,4 +83,5 @@ def _get_supervisor_id(email: str) -> int | None:
             row = cur.fetchone()
             return row[0] if row else None
     except psycopg2.Error:
+        logger.exception(f"Database error while fetching supervisor ID for email: {email}")
         raise HTTPException(status_code=500, detail="Database error while fetching supervisor ID")  
