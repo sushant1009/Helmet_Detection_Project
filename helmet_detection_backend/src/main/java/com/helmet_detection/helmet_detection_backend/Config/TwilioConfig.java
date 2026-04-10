@@ -1,4 +1,4 @@
-package com.helmet_detection.helmet_detection_backend.Security;
+package com.helmet_detection.helmet_detection_backend.Config;
 
 import com.twilio.Twilio;
 import jakarta.annotation.PostConstruct;

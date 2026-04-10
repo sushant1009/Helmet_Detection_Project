@@ -1,4 +1,4 @@
-package com.helmet_detection.helmet_detection_backend;
+package com.helmet_detection.helmet_detection_backend.Config;
 
 
 import com.cloudinary.Cloudinary;

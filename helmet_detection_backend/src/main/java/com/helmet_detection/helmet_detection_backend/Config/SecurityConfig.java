@@ -1,5 +1,7 @@
-package com.helmet_detection.helmet_detection_backend.Security;
+package com.helmet_detection.helmet_detection_backend.Config;
 
+import com.helmet_detection.helmet_detection_backend.Security.CustomUserDetails;
+import com.helmet_detection.helmet_detection_backend.Security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
