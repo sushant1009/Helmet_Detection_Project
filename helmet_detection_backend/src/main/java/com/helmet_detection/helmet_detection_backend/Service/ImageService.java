@@ -40,10 +40,10 @@ public class ImageService {
         }
     }
 
-    public String uploadViolationImage(File imageFile, String violationId, LocalDate date) {
+    public String uploadViolationImage(byte[] imageBytes, String violationId, LocalDate date) {
         try {
             Map result = cloudinary.uploader().upload(
-                    imageFile,
+                    imageBytes,
                     ObjectUtils.asMap(
                             "folder",    "violations/" + date,
                             "public_id", violationId,

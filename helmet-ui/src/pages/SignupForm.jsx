@@ -263,41 +263,6 @@ data.append("file", imageFile);
           <p className="text-success mt-2">Email Verified</p>
         )}
 
-        
-        <div className="camera-section mt-4 text-center">
-          {!capturedImage ? (
-            <>
-              <Webcam
-                audio={false}
-                ref={webcamRef}
-                screenshotFormat="image/jpeg"
-                width={320}
-                height={240}
-                videoConstraints={{ facingMode: "user" }}
-              />
-              <button type="button" onClick={captureImage} className="btn btn-info mt-2">
-                Capture Photo
-              </button>
-            </>
-          ) : (
-            <div>
-              <img
-                src={capturedImage}
-                alt="Captured"
-                width="320"
-                height="240"
-                className="border"
-              />
-              <button
-                type="button"
-                onClick={() => setCapturedImage(null)}
-                className="btn btn-warning mt-2"
-              >
-                Retake
-              </button>
-            </div>
-          )}
-        </div>
 
         <div className="text-center mt-4">
           <button type="submit" className="btn btn-success" disabled={loading}>

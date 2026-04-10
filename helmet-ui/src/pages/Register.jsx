@@ -73,16 +73,16 @@ export default function Register() {
     e.preventDefault();
     const validationErrors = validateForm(formData);
     setErrors(validationErrors);
-    if (!otpVerified) return setMessage("Please verify your email first.");
+    // if (!otpVerified) return setMessage("Please verify your email first.");
     if (!capturedImage) return setMessage("Please capture a face image.");
-    if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
+    // if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
     {
     setLoading(true);
     const blob = await (await fetch(capturedImage)).blob();
     const imageFile = new File([blob], "face.jpg", { type: "image/jpeg" });
-
+     setMessage("")
     const data = new FormData();
-data.append("fullName", formData.full_name);
+data.append("fullName", formData.full_name.toLowerCase());
 data.append("aadharNo", formData.aadhar_no);
 data.append("dob", formData.dob);
 data.append("email", formData.email);

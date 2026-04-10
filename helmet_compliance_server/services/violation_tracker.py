@@ -19,7 +19,8 @@ from config import (
     VIOLATION_THRESHOLD,
     MAX_VIOLATIONS_BEFORE_SUPERVISOR_ALERT,
     VIOLATION_URL,
-    MIN_FRAMES_BETWEEN_VIOLATIONS
+    MIN_FRAMES_BETWEEN_VIOLATIONS,
+    VIOLATION_URL_SUPERVISOR
 )
 logger = setup_logger("services.violation_tracker")
 
@@ -64,18 +65,22 @@ class ViolationTracker:
 
             if (
                 elapsed >= VIOLATION_THRESHOLD
-                and count <= MAX_VIOLATIONS_BEFORE_SUPERVISOR_ALERT
+                and count < MAX_VIOLATIONS_BEFORE_SUPERVISOR_ALERT
             ):
                 self._state[uid]["start_time"] = now
                 self._state[uid]["violation_count"] = count + 1
                 self._state[uid]['frames_since_last_violation'] = 0
 
                 asyncio.run_coroutine_threadsafe(
-                    self._send_violation_notification(uid, v["score"], frame_b64),
+                    self._send_violation_notification(uid, v["score"], frame_b64,"worker"),
                     event_loop,
                 )
 
             if self._state[uid]["violation_count"] >= MAX_VIOLATIONS_BEFORE_SUPERVISOR_ALERT:
+                asyncio.run_coroutine_threadsafe(
+                    self._send_violation_notification(uid, v["score"], frame_b64,"supervisor"),
+                    event_loop,
+                )
                 self._state[uid]["violation_count"] = 0
                 logger.info(
                     f"[ViolationTracker] camera={self.camera_id} worker={uid}"
@@ -93,7 +98,8 @@ class ViolationTracker:
         self,
         worker_id: int,
         score: float,
-        frame_b64: str,           
+        frame_b64: str,
+        rec:str           
     ) -> None:                    \
                                 
         payload = {
@@ -106,14 +112,25 @@ class ViolationTracker:
             "Content-Type": "application/json",
         }
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    VIOLATION_URL, json=payload, headers=headers
+            if rec == "worker":
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(
+                        VIOLATION_URL, json=payload, headers=headers
+                    )
+                logger.info(
+                    f"[ViolationTracker] Notification sent for worker={worker_id}:"
+                    f" {resp.status_code}"
                 )
-            logger.info(
-                f"[ViolationTracker] Notification sent for worker={worker_id}:"
-                f" {resp.status_code}"
-            )
+            else:
+                 async with httpx.AsyncClient() as client:
+                    resp = await client.post(
+                        VIOLATION_URL_SUPERVISOR, json=payload, headers=headers
+                    )
+                 logger.info(
+                    f"[ViolationTracker] Notification sent for worker={worker_id} to Supervisor:"
+                    f" {resp.status_code}"
+                )
+                
         except Exception as exc:
             logger.warning(f"[ViolationTracker] HTTP error for worker={worker_id}: {exc}")
 

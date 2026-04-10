@@ -45,6 +45,11 @@ dependencies {
 	// Mail (OTP, password reset)
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
+	//Coud storage for Images
+	implementation 'com.cloudinary:cloudinary-http45:1.39.0'
+
+	implementation 'com.twilio.sdk:twilio:9.0.0'
+
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

@@ -13,5 +13,5 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ./logs:/app/logs
+      - ./logs:/Attendance_Server/logs
     restart: unless-stopped

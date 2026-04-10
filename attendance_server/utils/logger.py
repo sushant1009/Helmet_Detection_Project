@@ -4,8 +4,11 @@ import os
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
+from config import LOG_LEVEL, CLEAR_LOGS_ON_STARTUP
 
-def setup_logger(name: str = "face_recognition_app", log_level: str = "INFO"):
+def setup_logger(name: str = "Attendance_Server", log_level: str = "INFO"):
+    
+   
     
     # Create logger
     logger = logging.getLogger(name)
@@ -14,12 +17,14 @@ def setup_logger(name: str = "face_recognition_app", log_level: str = "INFO"):
     # Prevent duplicate handlers
     if logger.handlers:
         return logger
-    app = "Attendance_Server"  # Fixed app name
-    # Determine log directory (works in Docker and local)
-    if os.path.exists("/{app}/logs"):
-        log_dir = Path("/{app}/logs")  # Docker
+    # Fixed app name
+    if os.path.exists("/app/logs"):
+        log_dir = Path("/app/logs")  # Docker
     else:
         log_dir = Path(__file__).parent.parent / "logs"  # Local
+        
+    if CLEAR_LOGS_ON_STARTUP and name == "Attendance_Server":
+        clear_all_logs(log_dir)
     
     # Create logs directory if it doesn't exist
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -75,5 +80,23 @@ def setup_logger(name: str = "face_recognition_app", log_level: str = "INFO"):
     
     return logger
 
-# Create default logger instance
+def clear_all_logs(log_dir: Path):
+    """Delete all log files on startup"""
+    try:
+        if not log_dir.exists():
+            return
+        
+        # Delete all .log files
+        for log_file in log_dir.glob("*.log*"):
+            if log_file.is_file():
+                log_file.unlink()
+                print(f"  Deleted: {log_file.name}")
+        
+        print(f"All logs cleared")
+        
+    except Exception as e:
+        print(f" Error clearing logs: {e}")
+
+
+
 logger = setup_logger()

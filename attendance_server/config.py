@@ -26,3 +26,7 @@ ALGORITHM = os.getenv("ALGORITHM")
 
 # Queue Settings
 FRAME_QUEUE_MAXSIZE = 10
+
+#Logging Settings
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+CLEAR_LOGS_ON_STARTUP = os.getenv("CLEAR_LOGS_ON_STARTUP", "true").lower() == "true"

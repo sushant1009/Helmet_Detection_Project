@@ -38,6 +38,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/webhook/**").permitAll()
                         .requestMatchers("/api/worker/**").hasRole("SUPERVISOR")
                         .requestMatchers("/api/attendance/**").hasRole("SUPERVISOR")
                         .requestMatchers("/api/dashboard/**").hasRole("SUPERVISOR")

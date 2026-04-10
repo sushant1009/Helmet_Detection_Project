@@ -40,6 +40,7 @@ FACE_CROP_PADDING_PX: int = int(os.getenv("FACE_CROP_PADDING_PX", "20"))
 
 # ── External service ──────────────────────────────────────────────────────────
 VIOLATION_URL: str = os.environ["VIOLATION_URL"]
+VIOLATION_URL_SUPERVISOR: str = os.environ["VIOLATION_URL_SUPERVISOR"]
 
 # ── Databases ─────────────────────────────────────────────────────────────────
 PG_DSN: dict = {

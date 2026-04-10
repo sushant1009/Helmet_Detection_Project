@@ -155,8 +155,9 @@ class FaceRecognitionService:
                         f"[FaceRecognitionService] No embedding found for"
                         f" worker_id={w_id}"
                     )
-        finally:
-           close_mongo_client()
+        except Exception as exc:
+            logger.error(f"[FaceRecognitionService] DB error: {exc}")
+           
 
         return worker_ids, worker_names, worker_emails, raw_embeddings
 

@@ -9,7 +9,9 @@ import com.helmet_detection.helmet_detection_backend.MongoDB.Document.Embeddings
 import com.helmet_detection.helmet_detection_backend.Security.JwtUtil;
 import com.helmet_detection.helmet_detection_backend.MongoDB.Service.EmbeddingsService;
 import com.helmet_detection.helmet_detection_backend.Service.ImageService;
+import com.helmet_detection.helmet_detection_backend.Service.SessionService;
 import com.helmet_detection.helmet_detection_backend.Service.SupervisorService;
+import com.helmet_detection.helmet_detection_backend.Service.WhatsAppService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -43,6 +45,8 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final EmbeddingsService embeddingsService;
     private final ImageService imageService;
+    private final SessionService sessionService;
+    private final WhatsAppService whatsAppService;
 
 
     @PostMapping(value = "/signup", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -119,6 +123,24 @@ public class AuthController {
             );
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    @PostMapping("/whatsapp/{phone}")
+    public String sendAlert(@PathVariable String phone) {
+
+        System.out.println(phone);
+
+        if (sessionService.isActive(phone)) {
+
+            whatsAppService.sendAlert(
+                    phone,
+                    "🚨 HELMORA ALERT\nHelmet not detected!"
+            );
+
+            return "Alert sent";
+        }
+
+        return "Session inactive";
     }
 
 
