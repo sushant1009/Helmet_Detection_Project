@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,6 +41,12 @@ public class AttendanceController {
             errorResponse.put("error", ex.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
+    }
+
+    @GetMapping("/{date}")
+    public ResponseEntity<?> getAttendanceByDate(Authentication authentication, @PathVariable LocalDate date){
+        String email = authentication.getName();
+        return ResponseEntity.ok(attendanceService.getAttendanceByDate(email,date));
     }
 
 }

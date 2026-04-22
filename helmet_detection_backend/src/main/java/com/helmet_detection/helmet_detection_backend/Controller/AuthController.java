@@ -43,11 +43,7 @@ public class AuthController {
     private final PasswordEncoder encoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
-    private final EmbeddingsService embeddingsService;
     private final ImageService imageService;
-    private final SessionService sessionService;
-    private final WhatsAppService whatsAppService;
-
 
     @PostMapping(value = "/signup", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> saveSupervisor(
@@ -75,7 +71,6 @@ public class AuthController {
             Supervisor saved = supervisorService.saveSupervisor(supervisor);
             String path = imageService.uploadWorkerImage(file.getBytes(),String.valueOf("SUP"+saved.getSupervisorId()));
             saved.setPhotoPath(path);
-            System.out.println(path);
            supervisorService.saveSupervisor(saved);
 
             return ResponseEntity.ok("Supervisor registerd with id " + saved.getSupervisorId());
@@ -125,23 +120,6 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
-    @PostMapping("/whatsapp/{phone}")
-    public String sendAlert(@PathVariable String phone) {
-
-        System.out.println(phone);
-
-        if (sessionService.isActive(phone)) {
-
-            whatsAppService.sendAlert(
-                    phone,
-                    "🚨 HELMORA ALERT\nHelmet not detected!"
-            );
-
-            return "Alert sent";
-        }
-
-        return "Session inactive";
-    }
 
 
 }

@@ -33,68 +33,6 @@ public class WorkerController {
     private final EmbeddingsService embeddingsService;
     private final ImageService imageService;
 
-//    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//    public ResponseEntity<?> registerWorker(Authentication authentication,
-//            @RequestParam("fullName") String fullName,
-//                                            @RequestParam("aadharNo") String aadharNo,
-//                                            @RequestParam("dob") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date dob,
-//                                            @RequestParam("email") String email,
-//                                            @RequestParam("phoneNo") String phoneNo,
-//                                            @RequestParam("file") MultipartFile file
-//    ) {
-//        String Semail = authentication.getName();
-//        System.out.println(Semail);
-//        try {
-//            // 1 Save file
-////            String uploadDir = "D:/helmet_photos/";
-////            Files.createDirectories(Paths.get(uploadDir));
-////
-////            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-////            Path filePath = Paths.get(uploadDir + fileName);
-////            Files.write(filePath, file.getBytes());
-//
-//            if(workerService.existsByAadharNo(aadharNo))
-//            {
-//                return ResponseEntity.status(HttpStatus.CONFLICT).body("Aadhar Already Exists");
-//            }
-//            if(workerService.existsByEmail(email))
-//            {
-//                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email Already Exists");
-//            }
-//
-//            // 2 Create Supervisor object
-//            Workers worker = new Workers();
-//            worker.setFullName(fullName);
-//            worker.setAadharNo(aadharNo);
-//            worker.setDob(dob);
-//            worker.setEmail(email);
-//            worker.setPhoneNo(phoneNo);
-////            worker.setPhotoPath(filePath.toString());
-//            worker.setCreatedAt(new Date());
-//            worker.setStatus(WorkersStatus.Active);
-//            Supervisor supervisor = supervisorService.getSupervisorByEmail(Semail).orElse(null);
-//            if (supervisor != null) {
-//                worker.setSupervisor(supervisor);
-//            } else {
-//                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid Supervisor");
-//            }
-//
-//            Workers saved = workerService.registerWorkerWithEmbeddings(file, worker);
-//
-//            String path = imageService.uploadWorkerImage(file.getBytes(),String.valueOf(saved.getWorkerId()));
-//            saved.setPhotoPath(path);
-//            workerService.registerWorkerWithEmbeddings(file, worker);
-//            if (saved.getWorkerId() != null)
-//                return ResponseEntity.ok("Worker registerd with id " + saved.getWorkerId());
-//
-//
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("Embeddings Server Not Available "+e);
-//        }
-//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                .body("Error while  saving supervisor: ");
-//    }
 
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> registerWorker(Authentication authentication,
@@ -158,8 +96,13 @@ public class WorkerController {
     @GetMapping("/embeddings/{workerId}")
     public EmbeddingsDocument getEmbeddingsByWorkerId(@PathVariable Long workerId)
     {
-        System.out.println(workerId);
        return embeddingsService.getEmbeddingsByworkerId(workerId);
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<?> getRegisteredWorkers(Authentication authentication){
+        String email = authentication.getName();
+        return ResponseEntity.ok(workerService.getRegisteredWorkers(email));
     }
 
 }

@@ -1,5 +1,6 @@
 package com.helmet_detection.helmet_detection_backend.Controller;
 
+import com.helmet_detection.helmet_detection_backend.DTO.ViolationResponse;
 import com.helmet_detection.helmet_detection_backend.DTO.VoilationRequest;
 import com.helmet_detection.helmet_detection_backend.Entity.Supervisor;
 import com.helmet_detection.helmet_detection_backend.Entity.Violations;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -27,7 +29,6 @@ public class ViolationsController {
     private final WorkerService workerService;
     private final ViolationsService violationsService;
     private final SupervisorService supervisorService;
-    private final EmailService emailService;
     private final ImageService imageService;
 
     private final SessionService sessionService;
@@ -146,8 +147,12 @@ public class ViolationsController {
                 .body(voilation.getVoilationId());
     }
 
+    @GetMapping("/{date}")
+    public ResponseEntity<?> getVoilations(Authentication authentication, @PathVariable LocalDate date){
+        String email = authentication.getName();
+        return ResponseEntity.ok(violationsService.getVoialations(email,date));
 
-
+    }
 
 
 }
