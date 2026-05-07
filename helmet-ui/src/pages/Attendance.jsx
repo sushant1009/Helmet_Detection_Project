@@ -1,6 +1,7 @@
 import  { useRef, useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import whCode from "../assets/wh_code.jpeg";
+import "../css/Attendance.css";
 
 const API_BASE = "http://13.222.168.65:8001";
 const WS_BASE = "ws://13.222.168.65:8001";
@@ -10,55 +11,6 @@ const ATTENDANCE_SETUP_STEPS = [
   "Ensure the stream has clear face visibility and stable lighting.",
   "Use the same identity used during employee face registration.",
 ];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Global CSS
-// ─────────────────────────────────────────────────────────────────────────────
-const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-
-  :root {
-    --bg:       #0e1117;
-    --surface:  #161b24;
-    --border:   #222834;
-    --border2:  #2a3042;
-    --text:     #c8d0e0;
-    --muted:    #4a5568;
-    --dim:      #2d3748;
-    --amber:    #f59e0b;
-    --amber-lo: rgba(245,158,11,0.10);
-    --red:      #ef4444;
-    --red-lo:   rgba(239,68,68,0.10);
-    --green:    #22c55e;
-    --green-lo: rgba(34,197,94,0.10);
-    --blue:     #3b82f6;
-    --blue-lo:  rgba(59,130,246,0.10);
-    --font:     'DM Sans', sans-serif;
-    --mono:     'JetBrains Mono', monospace;
-    --r:        8px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.3; }
-  }
-  @keyframes fade-up {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 1; box-shadow: 0 0 6px #ef4444; }
-    50%       { opacity: 0.3; box-shadow: none; }
-  }
-  @keyframes scan {
-    0%   { transform: translateY(-100%); }
-    100% { transform: translateY(100vh); }
-  }
-
-  video::-webkit-media-controls { display: none !important; }
-`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Source Selection Modal
@@ -102,7 +54,10 @@ function SourceModal({ onSelect }) {
           <p style={{ fontSize: 12, color: "var(--muted)", fontFamily: "var(--mono)" }}>
             Select input source to begin
           </p>
+
+          
         </div>
+        
 
         {screen === "pick" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -171,52 +126,6 @@ function SourceModal({ onSelect }) {
               </p>
             </div>
 
-            <div style={{
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              background: "var(--bg)",
-              padding: 10,
-              display: "flex",
-              gap: 10,
-              alignItems: "flex-start",
-            }}>
-              <img
-                src={whCode}
-                alt="Warehouse QR attendance code"
-                style={{
-                  width: 84,
-                  height: 84,
-                  borderRadius: 6,
-                  border: "1px solid var(--border2)",
-                  objectFit: "cover",
-                  flexShrink: 0,
-                }}
-              />
-              <div style={{ minWidth: 0 }}>
-                <p style={{
-                  fontSize: 10,
-                  color: "var(--muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontFamily: "var(--mono)",
-                  marginBottom: 5,
-                }}>
-                  Setup Instructions
-                </p>
-                <ol style={{
-                  margin: 0,
-                  paddingLeft: 16,
-                  color: "var(--text)",
-                  fontSize: 11,
-                  lineHeight: 1.45,
-                }}>
-                  {ATTENDANCE_SETUP_STEPS.map((step) => (
-                    <li key={step} style={{ marginBottom: 3 }}>{step}</li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-
             <button
               disabled={!rtspUrl.trim()}
               onClick={() => onSelect({ mode: "cctv", rtspUrl: rtspUrl.trim() })}
@@ -231,7 +140,10 @@ function SourceModal({ onSelect }) {
             >Connect</button>
           </div>
         )}
+
+        
       </div>
+      
     </div>
   );
 }
@@ -286,14 +198,22 @@ export default function AttendanceViewer() {
   const [rtspUrl,    setRtspUrl]    = useState("");
   const [frameCount, setFrameCount] = useState(0);
   const [fps,        setFps]        = useState(1);   // frames per second
+  const [isWhExpanded, setIsWhExpanded] = useState(false);
   const fpsRef       = useRef(1);                    // always-current value for loop
 
   // ESC exits fullscreen
   useEffect(() => {
-    const fn = (e) => { if (e.key === "Escape" && fullscreen) setFullscreen(false); };
+    const fn = (e) => {
+      if (e.key !== "Escape") return;
+      if (isWhExpanded) {
+        setIsWhExpanded(false);
+        return;
+      }
+      if (fullscreen) setFullscreen(false);
+    };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, [fullscreen]);
+  }, [fullscreen, isWhExpanded]);
 
   // Cleanup on unmount
   useEffect(() => () => stopCapture(), []);
@@ -359,6 +279,7 @@ export default function AttendanceViewer() {
     setStatus(""); setShowModal(true);
     setFrameCount(0);
     setFps(1); fpsRef.current = 1;
+    setIsWhExpanded(false);
   };
 
   const start = async () => {
@@ -437,8 +358,6 @@ export default function AttendanceViewer() {
 
   return (
     <div style={containerStyle}>
-      <style>{GLOBAL_CSS}</style>
-
       {showModal && <SourceModal onSelect={handleSelect} />}
 
       {/* ── Top bar ── */}
@@ -450,6 +369,7 @@ export default function AttendanceViewer() {
         borderBottom: "1px solid var(--border)",
         gap: 12, flexShrink: 0, flexWrap: "wrap",
       }}>
+        
         {/* Brand */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
@@ -592,88 +512,207 @@ export default function AttendanceViewer() {
       )}
 
       {/* ── Feed ── */}
-      <div style={{ flex: 1, position: "relative", background: "#07090f", overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", background: "#07090f", overflow: "hidden" }}>
 
-        {/* Hidden live webcam video (used for capture only) */}
-        <video ref={videoRef} autoPlay muted playsInline style={{ display: "none" }} />
+        <div style={{ flex: 1, minWidth: 0, position: "relative", background: "#07090f", overflow: "hidden" }}>
+          {/* Hidden live webcam video (used for capture only) */}
+          <video ref={videoRef} autoPlay muted playsInline style={{ display: "none" }} />
 
-        {/* Annotated frame from backend */}
-        <img
-          ref={imgRef}
-          alt="Attendance feed"
-          style={{
-            position: "absolute", inset: 0,
-            width: "100%", height: "100%",
-            objectFit: "contain", display: "block",
-          }}
-        />
+          {/* Annotated frame from backend */}
+          <img
+            ref={imgRef}
+            alt="Attendance feed"
+            style={{
+              position: "absolute", inset: 0,
+              width: "100%", height: "100%",
+              objectFit: "contain", display: "block",
+            }}
+          />
 
-        {/* Empty state */}
-        {!running && (
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            gap: 10, pointerEvents: "none",
-            background: "rgba(7,9,15,0.7)",
-          }}>
-            <div style={{ fontSize: 36, opacity: 0.1 }}>👁</div>
-            <span style={{
-              fontFamily: "var(--mono)", fontSize: 11,
-              color: "var(--dim)", letterSpacing: "0.12em",
+          {/* Empty state */}
+          {!running && (
+            <div style={{
+              position: "absolute", inset: 0,
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              gap: 10, pointerEvents: "none",
+              background: "rgba(7,9,15,0.7)",
             }}>
-              {mode ? "READY — PRESS START" : "SELECT A SOURCE"}
+              <div style={{ fontSize: 36, opacity: 0.1 }}>👁</div>
+              <span style={{
+                fontFamily: "var(--mono)", fontSize: 11,
+                color: "var(--dim)", letterSpacing: "0.12em",
+              }}>
+                {mode ? "READY — PRESS START" : "SELECT A SOURCE"}
+              </span>
+            </div>
+          )}
+
+          {/* HUD — top left live/standby */}
+          <div style={{
+            position: "absolute", top: 12, left: 14,
+            display: "flex", alignItems: "center", gap: 5, zIndex: 10,
+          }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: "50%",
+              background: running ? "var(--green)" : "var(--dim)",
+              animation: running ? "pulse-dot 1.4s ease infinite" : "none",
+              transition: "background 0.3s",
+            }} />
+            <span style={{
+              fontFamily: "var(--mono)", fontSize: 9,
+              color: running ? "var(--green)" : "var(--dim)",
+              letterSpacing: "0.12em",
+            }}>
+              {running ? "LIVE" : "STANDBY"}
             </span>
           </div>
-        )}
 
-        {/* HUD — top left live/standby */}
-        <div style={{
-          position: "absolute", top: 12, left: 14,
-          display: "flex", alignItems: "center", gap: 5, zIndex: 10,
-        }}>
-          <span style={{
-            width: 6, height: 6, borderRadius: "50%",
-            background: running ? "var(--green)" : "var(--dim)",
-            animation: running ? "pulse-dot 1.4s ease infinite" : "none",
-            transition: "background 0.3s",
-          }} />
-          <span style={{
-            fontFamily: "var(--mono)", fontSize: 9,
-            color: running ? "var(--green)" : "var(--dim)",
-            letterSpacing: "0.12em",
-          }}>
-            {running ? "LIVE" : "STANDBY"}
-          </span>
+          {/* HUD — bottom left frame counter */}
+          {running && (
+            <div style={{
+              position: "absolute", bottom: 12, left: 14, zIndex: 10,
+              display: "flex", gap: 6,
+            }}>
+              <span style={{
+                fontFamily: "var(--mono)", fontSize: 10,
+                color: "var(--muted)",
+                background: "rgba(7,9,15,0.8)",
+                border: "1px solid var(--border)",
+                borderRadius: 4, padding: "3px 8px",
+                backdropFilter: "blur(4px)",
+              }}>
+                {mode === "webcam" ? "📷" : "📡"} {mode === "webcam" ? "Webcam" : "CCTV"}
+              </span>
+            </div>
+          )}
+
+          {/* Subtle scanline overlay when live */}
+          {running && (
+            <div style={{
+              position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2,
+              backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.007) 3px,rgba(255,255,255,0.007) 4px)",
+            }} />
+          )}
         </div>
 
-        {/* HUD — bottom left frame counter */}
-        {running && (
-          <div style={{
-            position: "absolute", bottom: 12, left: 14, zIndex: 10,
-            display: "flex", gap: 6,
+        {mode && (
+          <aside style={{
+            width: fullscreen ? 360 : 300,
+            maxWidth: "35vw",
+            minWidth: 240,
+            borderLeft: "1px solid var(--border)",
+            background: "var(--surface)",
+            padding: 14,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
           }}>
-            <span style={{
-              fontFamily: "var(--mono)", fontSize: 10,
-              color: "var(--muted)",
-              background: "rgba(7,9,15,0.8)",
-              border: "1px solid var(--border)",
-              borderRadius: 4, padding: "3px 8px",
-              backdropFilter: "blur(4px)",
-            }}>
-              {mode === "webcam" ? "📷" : "📡"} {mode === "webcam" ? "Webcam" : "CCTV"}
-            </span>
-          </div>
-        )}
-
-        {/* Subtle scanline overlay when live */}
-        {running && (
-          <div style={{
-            position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2,
-            backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.007) 3px,rgba(255,255,255,0.007) 4px)",
-          }} />
+            <img
+              src={whCode}
+              alt="Warehouse QR attendance code"
+              style={{
+                width: "100%",
+                maxHeight: fullscreen ? 260 : 210,
+                borderRadius: 8,
+                border: "1px solid var(--border2)",
+                objectFit: "contain",
+                background: "#fff",
+              }}
+            />
+            <button
+              onClick={() => setIsWhExpanded(true)}
+              style={{
+                border: "1px solid var(--border)",
+                background: "var(--bg)",
+                color: "var(--text)",
+                borderRadius: 6,
+                padding: "7px 10px",
+                cursor: "pointer",
+                fontFamily: "var(--font)",
+                fontSize: 12,
+                fontWeight: 600,
+                width: "fit-content",
+              }}
+            >
+              ⛶ Maximize Image
+            </button>
+            <div>
+              <p style={{
+                fontSize: 10,
+                color: "var(--muted)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                fontFamily: "var(--mono)",
+                marginBottom: 6,
+              }}>
+                Setup Instructions
+              </p>
+              <ol style={{
+                margin: 0,
+                paddingLeft: 18,
+                color: "var(--text)",
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}>
+                {ATTENDANCE_SETUP_STEPS.map((step) => (
+                  <li key={step} style={{ marginBottom: 5 }}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          </aside>
         )}
       </div>
+
+      {isWhExpanded && (
+        <div
+          onClick={() => setIsWhExpanded(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1200,
+            background: "rgba(6,8,12,0.92)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <button
+            onClick={() => setIsWhExpanded(false)}
+            style={{
+              position: "absolute",
+              top: 18,
+              right: 18,
+              border: "1px solid var(--border2)",
+              background: "var(--surface)",
+              color: "var(--text)",
+              borderRadius: 8,
+              padding: "7px 11px",
+              cursor: "pointer",
+              fontFamily: "var(--font)",
+              fontSize: 12,
+            }}
+          >
+            ✕ Close
+          </button>
+          <img
+            src={whCode}
+            alt="Warehouse QR attendance code expanded"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "min(96vw, 920px)",
+              maxHeight: "90vh",
+              width: "100%",
+              objectFit: "contain",
+              borderRadius: 12,
+              border: "1px solid var(--border2)",
+              background: "#fff",
+              boxShadow: "0 24px 70px rgba(0,0,0,0.55)",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

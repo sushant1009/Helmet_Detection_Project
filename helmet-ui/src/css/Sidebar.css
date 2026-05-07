@@ -14,6 +14,40 @@
   margin-bottom: 30px;
 }
 
+.session-timer {
+  border: 1px solid #334155;
+  background: #111827;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.session-label {
+  color: #94a3b8;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.session-time {
+  color: #dbeafe;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.session-timer.expired {
+  border-color: #dc2626;
+  background: #2b1212;
+}
+
+.session-timer.expired .session-time {
+  color: #fecaca;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
