@@ -54,9 +54,12 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
+	//Server Health
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
 	// Testing (ALL tests come from here)
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+//	testImplementation 'org.springframework.boot:spring-boot-starter-security-test:3.5.3'
 
 
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

@@ -50,7 +50,7 @@ const Forgetpass = () => {
     if(validateEmail(email))
     {
       try {
-      await api.post("/api/auth/otp/send", null, { params: { email } });
+      await api.post("/api/auth/send-otp/pass", null, { params: { email } });
       setOtpSent(true);
       setTimer(RESEND_TIME);
       setCanResend(false);
@@ -73,7 +73,7 @@ const Forgetpass = () => {
   // Verify OTP
   const verifyOtp = async () => {
     try {
-      await api.post("/api/auth/otp/verify", null, { params: { email, otp } });
+      await api.post("/api/auth/verify-otp", null, { params: { email, otp } });
       setMessage("OTP verified successfully ");
       setOtpVerified(true);
     } catch {

@@ -1,0 +1,145 @@
+/* 🌙 Global Theme */
+body {
+  margin: 10px;
+  font-family: "Segoe UI", sans-serif;
+  background-color: #0f172a;
+  color: #ffffff;
+}
+
+/* 🧱 Layout */
+.d-flex {
+  display: flex;
+}
+
+/* 📌 Sidebar */
+.sidebar {
+  width: max-content;
+  height: 100vh;
+  background: #020617;
+  padding: 20px;
+  border-right: 1px solid #1e293b;
+}
+
+.sidebar h4 {
+  color: #38bdf8;
+  margin-bottom: 30px;
+}
+
+.sidebar p {
+  margin: 12px 0;
+  cursor: pointer;
+  color: #cbd5f5;
+  transition: 0.3s;
+}
+
+.sidebar p:hover {
+  color: #38bdf8;
+  transform: translateX(5px);
+}
+
+/* 🔴 Logout Button */
+.logout-btn {
+  background: #ef4444;
+  border: none;
+  padding: 10px;
+  width: 100%;
+  border-radius: 8px;
+  color: white;
+  margin-top: 20px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
+}
+
+/* 📊 Main Content */
+.main-content {
+  flex-grow: 1;
+  padding: 30px;
+  min-height: 100vh;
+}
+
+/* 📦 Cards */
+.card {
+  background: #020617;
+  border-radius: 12px;
+  padding: 20px;
+  transition: 0.3s;
+  border: 1px solid #1e293b;
+}
+
+.card:hover {
+  transform: scale(1.05);
+  border-color: #38bdf8;
+}
+
+.card h4 {
+  font-size: 18px;
+  color: #cbd5f5;
+}
+
+.card p {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+/* 📅 Input + Button */
+input[type="date"] {
+  background: #020617;
+  color: white;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+button {
+  border-radius: 8px !important;
+}
+
+/* 📋 Table */
+.table {
+  background: #020617;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table th {
+  background: #020617;
+  color: #38bdf8;
+  border-bottom: 1px solid #1e293b;
+}
+
+.table td {
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.table-hover tbody tr:hover {
+  background: #1e293b;
+}
+
+/* 🖼 Image Styling */
+.table img {
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+.table img:hover {
+  transform: scale(1.2);
+}
+
+/* 📱 Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .card {
+    margin-bottom: 15px;
+  }
+}

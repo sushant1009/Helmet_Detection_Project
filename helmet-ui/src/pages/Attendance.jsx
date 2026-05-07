@@ -1,8 +1,15 @@
 import  { useRef, useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import whCode from "../assets/wh_code.jpeg";
 
-const API_BASE = "http://50.19.51.33:8003";
-const WS_BASE = "ws://50.19.51.33:8003";
+const API_BASE = "http://13.222.168.65:8001";
+const WS_BASE = "ws://13.222.168.65:8001";
+
+const ATTENDANCE_SETUP_STEPS = [
+  "Scan the WH code at shift start to open attendance verification.",
+  "Ensure the stream has clear face visibility and stable lighting.",
+  "Use the same identity used during employee face registration.",
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Global CSS
@@ -163,6 +170,53 @@ function SourceModal({ onSelect }) {
                 Backend will connect and forward processed frames.
               </p>
             </div>
+
+            <div style={{
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              background: "var(--bg)",
+              padding: 10,
+              display: "flex",
+              gap: 10,
+              alignItems: "flex-start",
+            }}>
+              <img
+                src={whCode}
+                alt="Warehouse QR attendance code"
+                style={{
+                  width: 84,
+                  height: 84,
+                  borderRadius: 6,
+                  border: "1px solid var(--border2)",
+                  objectFit: "cover",
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ minWidth: 0 }}>
+                <p style={{
+                  fontSize: 10,
+                  color: "var(--muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontFamily: "var(--mono)",
+                  marginBottom: 5,
+                }}>
+                  Setup Instructions
+                </p>
+                <ol style={{
+                  margin: 0,
+                  paddingLeft: 16,
+                  color: "var(--text)",
+                  fontSize: 11,
+                  lineHeight: 1.45,
+                }}>
+                  {ATTENDANCE_SETUP_STEPS.map((step) => (
+                    <li key={step} style={{ marginBottom: 3 }}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+
             <button
               disabled={!rtspUrl.trim()}
               onClick={() => onSelect({ mode: "cctv", rtspUrl: rtspUrl.trim() })}

@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-const API_BASE = "http://localhost:8003";
-const WS_BASE = "ws://localhost:8003";
+const API_BASE = "http://13.222.168.65:8003";
+const WS_BASE = "ws://13.222.168.65:8003";
 
 // ── PiP Annotated Frame (top-right corner of feed) ────────────────────────────
 function AnnotatedPiP({ src }) {

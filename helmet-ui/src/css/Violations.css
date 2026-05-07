@@ -1,0 +1,106 @@
+/* 🔙 Header with Back Button */
+.violations-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  background: #020617;
+  border: 1px solid #1e293b;
+  color: #38bdf8;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.back-btn:hover {
+  background: #1e293b;
+  transform: translateX(-3px);
+}
+
+.violations-title {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* 📅 Controls (date + button) */
+.violations-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.violations-controls input {
+  background: #020617;
+  color: white;
+  border: 1px solid #1e293b;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.violations-controls input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+.fetch-btn {
+  background: #38bdf8;
+  border: none;
+  color: black;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.fetch-btn:hover {
+  background: #0ea5e9;
+}
+
+/* 📋 Table */
+.violations-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #020617;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.violations-table th {
+  background: #020617;
+  color: #38bdf8;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #1e293b;
+}
+
+.violations-table td {
+  padding: 12px;
+  border-bottom: 1px solid #1e293b;
+  color: #e2e8f0;
+}
+
+.violations-table tr:hover {
+  background: #1e293b;
+}
+
+/* 🖼 Image */
+.violation-img {
+  width: 100px;
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+.violation-img:hover {
+  transform: scale(1.2);
+}
+
+/* ❌ No Data */
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: #94a3b8;
+}

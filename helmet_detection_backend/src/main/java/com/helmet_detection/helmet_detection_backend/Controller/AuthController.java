@@ -120,6 +120,11 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
+    @GetMapping("/health")
+    public ResponseEntity<?> getHealth(){
+        return ResponseEntity.ok("Server is running fine");
+    }
+
 
 
 }
