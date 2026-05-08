@@ -37,14 +37,21 @@ export default function Register() {
   
   const sendOtp = async () => {
     const validationErrors = validateForm(formData);
-  setErrors(validationErrors);
+    setErrors(validationErrors);
     if (!formData.email) return setMessage("Please enter email first.");
     if(Object.keys(validationErrors).length === 0)
     {
     try {
-     await api.post(
-  `api/auth/send-otp?email=${encodeURIComponent(formData.email)}`
-);  
+     await axios.post(
+  "https://helmet-detection-backend-lye2.onrender.com/api/auth/send-otp",
+  null,
+  {
+    params: {
+      email: formData.email
+    }
+  }
+);
+alert("OTP sent")
       setEmail(formData.email)
       setOtpSent(true);
       setMessage("OTP sent to your email.");
@@ -73,9 +80,9 @@ export default function Register() {
     e.preventDefault();
     const validationErrors = validateForm(formData);
     setErrors(validationErrors);
-    // if (!otpVerified) return setMessage("Please verify your email first.");
+    if (!otpVerified) return setMessage("Please verify your email first.");
     if (!capturedImage) return setMessage("Please capture a face image.");
-    // if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
+    if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
     {
     setLoading(true);
     const blob = await (await fetch(capturedImage)).blob();

@@ -70,7 +70,9 @@ export default function Sidebar() {
 
   return (
     <div className="sidebar">
-      <h1 className="sidebar-title">Helmet AI</h1>
+      <h1 className="sidebar-title">
+        <span className="sidebar-title-glow">VisionShield</span>
+      </h1>
       {role && sessionRemaining && (
         <div className={`session-timer ${sessionExpired ? "expired" : ""}`}>
           <span className="session-label">Session</span>

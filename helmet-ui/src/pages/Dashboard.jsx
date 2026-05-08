@@ -80,12 +80,12 @@ function Dashboard() {
           </div>
         )}
 
-        {activeView === "violations" && <ViolationsPage />}
+        {activeView === "violations" && <ViolationsPage setActiveView={setActiveView} />}
 
-        {activeView === "attendance" && <AttendancePage/>}
+        {activeView === "attendance" && <AttendancePage setActiveView={setActiveView} />}
 
         {activeView === "workers" && (
-          <RegisteredWorkers/>
+          <RegisteredWorkers setActiveView={setActiveView} />
         )}
 
       </div>
