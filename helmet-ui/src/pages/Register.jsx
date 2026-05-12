@@ -43,7 +43,7 @@ export default function Register() {
     {
     try {
      await axios.post(
-  "https://helmet-detection-backend-lye2.onrender.com/api/auth/send-otp",
+  "http://localhost:8080/api/auth/send-otp",
   null,
   {
     params: {
@@ -63,7 +63,7 @@ alert("OTP sent")
 
   const verifyOtp = async () => {
     try {
-      const res =  await api.post("api/auth/verify-otp", null, { params: { email, otp } });
+      const res =  await axios.post("http://localhost:8080/api/auth/verify-otp", null, { params: { email, otp } });
       console.log(res)
       if(res.status == 200) {
         setOtpVerified(true);

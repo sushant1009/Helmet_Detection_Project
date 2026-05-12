@@ -3,8 +3,8 @@ import axios from "axios";
 import whCode from "../assets/wh_code.jpeg";
 import "../css/Attendance.css";
 
-const API_BASE = "http://13.222.168.65:8001";
-const WS_BASE = "ws://13.222.168.65:8001";
+const API_BASE = "http://54.89.130.2:8001";
+const WS_BASE = "ws://54.89.130.2:8001";
 
 const ATTENDANCE_SETUP_STEPS = [
   "Scan the WH code at shift start to open attendance verification.",

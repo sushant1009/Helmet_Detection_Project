@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import axios from "axios";
 import api from '../config/axiosConfig'
 import { useNavigate } from "react-router-dom";
 import '../css/LoginForm.css';
@@ -13,6 +12,7 @@ const LoginForm = () => {
   });
 
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -23,6 +23,7 @@ const LoginForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     try {
       // Call backend login API
@@ -60,6 +61,8 @@ const LoginForm = () => {
   } else {
     alert("Something went wrong. Please try again.");
   }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -86,7 +89,9 @@ const LoginForm = () => {
           required
         />
 
-        <button type="submit">Login</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Login"}
+        </button>
         <a href="/forgetpass">Forgot Password ?</a> <a href="/signup">Not a user</a>
 
         {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
