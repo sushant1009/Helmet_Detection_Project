@@ -16,6 +16,8 @@ const Forgetpass = () => {
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false)
+
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -46,10 +48,12 @@ const Forgetpass = () => {
   }
 
   // Send OTP
+  
   const sendOtp = async () => {
     if(validateEmail(email))
     {
       try {
+      setIsLoading(true);
       await api.post("/api/auth/send-otp/pass", null, { params: { email } });
       setOtpSent(true);
       setTimer(RESEND_TIME);
@@ -65,6 +69,8 @@ const Forgetpass = () => {
       setMessage("OTP verification failed");
     }
       
+    }finally{
+      setIsLoading(false)
     }
     }
     
@@ -73,10 +79,11 @@ const Forgetpass = () => {
   // Verify OTP
   const verifyOtp = async () => {
     try {
+      setIsLoading(true);
       await api.post("/api/auth/verify-otp", null, { params: { email, otp } });
       setMessage("OTP verified successfully ");
       setOtpVerified(true);
-    } catch {
+    } catch (error) {
        if (error.response?.status === 400) {
       setMessage("Invalid or expired OTP ");
     } else if (error.response?.status === 401) {
@@ -89,6 +96,8 @@ const Forgetpass = () => {
       setMessage("OTP verification failed");
     }
       setOtpVerified(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -100,6 +109,7 @@ const Forgetpass = () => {
     }
 
     try {
+      setIsLoading(true);
       await api.put("/api/auth/change-pass", null, {
         params: { email, newPassword },
       });
@@ -111,7 +121,7 @@ const Forgetpass = () => {
       setOtpVerified(false);
       setNewPassword("");
       setConfirmPassword("");
-    } catch {
+    } catch (error) {
        if (error.response?.status === 400) {
       setMessage("Invalid or expired OTP ");
     } else if (error.response?.status === 401) {
@@ -123,6 +133,8 @@ const Forgetpass = () => {
     }  else{
       setMessage("OTP verification failed");
     }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -142,7 +154,11 @@ const Forgetpass = () => {
       />
 
       {/* Send OTP button */}
-      {!otpSent && <button onClick={sendOtp}>Send OTP</button>}
+      {!otpSent && (
+        <button onClick={sendOtp} disabled={isLoading}>
+          {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Send OTP"}
+        </button>
+      )}
 
       {/* OTP verification section */}
       {otpSent && !otpVerified && (
@@ -154,15 +170,17 @@ const Forgetpass = () => {
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
           />
-          <button onClick={verifyOtp}>Verify OTP</button>
+          <button onClick={verifyOtp} disabled={isLoading}>
+            {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Verify OTP"}
+          </button>
 
           {!canResend ? (
             <p className="timer">
               Resend OTP in <strong>{timer}s</strong>
             </p>
           ) : (
-            <button className="resend-btn" onClick={sendOtp}>
-              Resend OTP
+            <button className="resend-btn" onClick={sendOtp} disabled={isLoading}>
+              {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Resend OTP"}
             </button>
           )}
         </>
@@ -184,7 +202,9 @@ const Forgetpass = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          <button onClick={changePassword}>Change Password</button>
+          <button onClick={changePassword} disabled={isLoading}>
+            {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Change Password"}
+          </button>
         </>
       )}
 
