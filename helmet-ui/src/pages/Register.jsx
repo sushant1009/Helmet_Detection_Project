@@ -5,6 +5,7 @@ import "./Register.css";
 import { validateForm } from "./validateRegistration";
 import api from '../config/axiosConfig'
 import LoadingButton from "../components/LoadingButton";
+import { OTP_SERVER_URL  as OTP_SERVER_URL} from "../config/streamingApiConfig";
 
 export default function Register() {
   const webcamRef = useRef(null);
@@ -45,7 +46,7 @@ export default function Register() {
     try {
       setIsLoading(true);
      await axios.post(
-  "http://localhost:8080/api/auth/send-otp",
+  OTP_SERVER_URL+"/api/auth/send-otp",
   null,
   {
     params: {
@@ -68,7 +69,7 @@ alert("OTP sent")
   const verifyOtp = async () => {
     try {
       setIsLoading(true);
-      const res =  await axios.post("http://localhost:8080/api/auth/verify-otp", null, { params: { email, otp } });
+      const res =  await axios.post(OTP_SERVER_URL+"/api/auth/verify-otp", null, { params: { email, otp } });
       console.log(res)
       if(res.status == 200) {
         setOtpVerified(true);
