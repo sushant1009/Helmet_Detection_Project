@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../config/axiosConfig";
+import LoadingButton from "../components/LoadingButton";
 import '../css/Violations.css'
 
 function RegisteredWorkers({ setActiveView }) {
@@ -24,9 +25,9 @@ function RegisteredWorkers({ setActiveView }) {
 
       {/* Header */}
       <div className="violations-header">
-        <button className="back-btn" onClick={() => setActiveView("dashboard")}>
+        <LoadingButton className="back-btn" onClick={() => setActiveView("dashboard")}>
           ← Back
-        </button>
+        </LoadingButton>
         <h2 className="violations-title">Attendance</h2>
       </div>
 

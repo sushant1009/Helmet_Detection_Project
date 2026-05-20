@@ -4,6 +4,7 @@ import Webcam from "react-webcam";
 import "./Register.css";
 import { validateForm } from "./validateForm";
 import api from '../config/axiosConfig'
+import LoadingButton from "../components/LoadingButton";
 import { useNavigate } from "react-router-dom";
 
 export default function Register() {
@@ -13,7 +14,7 @@ export default function Register() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   
@@ -47,6 +48,7 @@ export default function Register() {
     if(Object.keys(validationErrors).length === 0)
     {
     try {
+      setIsLoading(true);
       await api.post(
   `api/auth/send-otp?email=${encodeURIComponent(formData.email)}`
 );    
@@ -55,12 +57,15 @@ export default function Register() {
       setMessage("OTP sent to your email.");
     } catch {
       setMessage("Failed to send OTP. Try again.");
+    } finally {
+      setIsLoading(false);
     }
     }
   };
 
   const verifyOtp = async () => {
     try {
+      setIsLoading(true);
       const res =  await api.post("api/auth/verify-otp", null, { params: { email, otp } });
       if (res.status == 200) {
         setOtpVerified(true)
@@ -70,6 +75,8 @@ export default function Register() {
       }
     } catch {
       setMessage("Error while verifying OTP.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,7 +88,7 @@ export default function Register() {
     if (!capturedImage) return setMessage("Please capture a face image.");
     if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
     {
-    setLoading(true);
+    setIsLoading(true);
     const blob = await (await fetch(capturedImage)).blob();
     const imageFile = new File([blob], "face.jpg", { type: "image/jpeg" });
 
@@ -121,7 +128,7 @@ data.append("file", imageFile);
       setMessage("Error registering user.");
       console.error(err);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
     }
   };
@@ -255,9 +262,9 @@ data.append("file", imageFile);
               onChange={(e) => setOtp(e.target.value)}
               className="form-control d-inline w-auto me-2"
             />
-            <button type="button" onClick={verifyOtp} className="btn btn-success" disabled={otpVerified}>
+            <LoadingButton type="button" onClick={verifyOtp} className="btn btn-success" loading={isLoading} disabled={otpVerified}>
               Verify OTP
-            </button>
+            </LoadingButton>
           </div>
         ) : (
           <p className="text-success mt-2">Email Verified</p>
@@ -265,9 +272,9 @@ data.append("file", imageFile);
 
 
         <div className="text-center mt-4">
-          <button type="submit" className="btn btn-success" disabled={loading}>
-            {loading ? "Registering..." : "Register Worker"}
-          </button>
+          <LoadingButton type="submit" className="btn btn-success" loading={isLoading}>
+            Register Supervisor
+          </LoadingButton>
         </div>
       </form>
 

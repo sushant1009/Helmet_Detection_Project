@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import api from '../config/axiosConfig'
 import { useNavigate } from "react-router-dom";
+import LoadingButton from "../components/LoadingButton";
 import '../css/LoginForm.css';
 
 const LoginForm = () => {
@@ -89,9 +90,9 @@ const LoginForm = () => {
           required
         />
 
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Login"}
-        </button>
+        <LoadingButton type="submit" loading={isLoading}>
+          Login
+        </LoadingButton>
         <a href="/forgetpass">Forgot Password ?</a> <a href="/signup">Not a user</a>
 
         {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}

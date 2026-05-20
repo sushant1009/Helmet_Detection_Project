@@ -1,6 +1,7 @@
 import { React, useEffect, useState } from "react";
 import { NavLink,Link, useNavigate } from "react-router-dom";
 import { Home, UserPlus, Play, Table, Camera, LogIn, LogOut } from "lucide-react";
+import LoadingButton from "./LoadingButton";
 import "../css/Sidebar.css";
 
 function parseJwtExpiry(token) {
@@ -98,9 +99,9 @@ export default function Sidebar() {
         <NavLink to="/attendance" className="nav-item"><Play /> Attendance</NavLink>
         <NavLink to="/helmet-monitoring" className="nav-item"><Camera/>Helmet Monitoring</NavLink>
         <NavLink to="/logs" className="nav-item"><Table /> Logs</NavLink>
-        <button className="logout-btn" onClick={logout}>
+        <LoadingButton className="logout-btn" onClick={logout}>
              <LogOut/> Logout
-            </button>
+            </LoadingButton>
       </nav>
         )  
       }

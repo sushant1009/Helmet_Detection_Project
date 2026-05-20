@@ -54,6 +54,8 @@
   font-weight: 500;
   cursor: pointer;
   transition: 0.3s;
+  min-width: 5.5rem;
+  min-height: 2.25rem;
 }
 
 .fetch-btn:hover {

@@ -1,19 +1,24 @@
 import { useState } from "react";
 import api from "../config/axiosConfig";
+import LoadingButton from "../components/LoadingButton";
 import '../css/Violations.css'
 
 function AttendancePage({ setActiveView }) {
 
   const [date, setDate] = useState("");
   const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchViolations = async () => {
     try {
+      setIsLoading(true);
       const res = await api.get(`/api/attendance/${date}`);
       console.log(res.data)
       setData(res.data);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -22,9 +27,9 @@ function AttendancePage({ setActiveView }) {
 
       {/* Header */}
       <div className="violations-header">
-        <button className="back-btn" onClick={() => setActiveView("dashboard")}>
+        <LoadingButton className="back-btn" onClick={() => setActiveView("dashboard")}>
           ← Back
-        </button>
+        </LoadingButton>
         <h2 className="violations-title">Attendance</h2>
       </div>
 
@@ -35,9 +40,9 @@ function AttendancePage({ setActiveView }) {
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
-        <button className="fetch-btn" onClick={fetchViolations}>
+        <LoadingButton className="fetch-btn" onClick={fetchViolations} loading={isLoading} loaderVariant="dark">
           Fetch
-        </button>
+        </LoadingButton>
       </div>
 
       {/* Table */}

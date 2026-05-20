@@ -1,8 +1,10 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import axios from "axios";
-
-const API_BASE = "http://54.89.130.2:8003";
-const WS_BASE = "ws://54.89.130.2:8003";
+import LoadingButton from "../components/LoadingButton";
+import {
+  HELMET_MONITORING_API_BASE as API_BASE,
+  HELMET_MONITORING_WS_BASE as WS_BASE,
+} from "../config/streamingApiConfig";
 
 // ── PiP Annotated Frame (top-right corner of feed) ────────────────────────────
 function AnnotatedPiP({ src }) {
@@ -142,24 +144,24 @@ function ModeModal({ onSelect }) {
 
         {screen === "pick" && (
           <div style={modal.cards}>
-            <button style={modal.card} onClick={() => onSelect({ mode: "webcam" })}>
+            <LoadingButton style={modal.card} onClick={() => onSelect({ mode: "webcam" })}>
               <span style={modal.cardIcon}>📷</span>
               <span style={modal.cardTitle}>Webcam</span>
               <span style={modal.cardDesc}>Use your device's built-in or USB camera</span>
               <span style={modal.cardArrow}>→</span>
-            </button>
-            <button style={modal.card} onClick={() => setScreen("cctv-input")}>
+            </LoadingButton>
+            <LoadingButton style={modal.card} onClick={() => setScreen("cctv-input")}>
               <span style={modal.cardIcon}>📡</span>
               <span style={modal.cardTitle}>CCTV / IP Camera</span>
               <span style={modal.cardDesc}>Stream from an RTSP IP camera via backend</span>
               <span style={modal.cardArrow}>→</span>
-            </button>
+            </LoadingButton>
           </div>
         )}
 
         {screen === "cctv-input" && (
           <div style={modal.cctvForm}>
-            <button style={modal.back} onClick={() => setScreen("pick")}>← Back</button>
+            <LoadingButton style={modal.back} onClick={() => setScreen("pick")}>← Back</LoadingButton>
             <label style={modal.label}>RTSP Stream URL</label>
             <input
               style={modal.input}
@@ -172,13 +174,13 @@ function ModeModal({ onSelect }) {
             <p style={modal.hint}>
               The backend will connect to this RTSP stream and forward annotated frames.
             </p>
-            <button
-              style={{ ...modal.submitBtn, ...(rtspUrl.trim() ? {} : modal.submitDisabled) }}
+            <LoadingButton
+              style={{ ...modal.submitBtn, ...(rtspUrl.trim() ? {} : modal.submitDisabled), width: "100%" }}
               disabled={!rtspUrl.trim()}
               onClick={() => onSelect({ mode: "cctv", rtspUrl: rtspUrl.trim() })}
             >
               Connect ▶
-            </button>
+            </LoadingButton>
           </div>
         )}
       </div>
@@ -202,6 +204,7 @@ export default function HelmetMonitoring({ cameraId = "camera-01" }) {
   const [showModal, setShowModal] = useState(true);
   const [annotatedSrc, setAnnotatedSrc] = useState(null);
   const [fullscreen, setFullscreen] = useState(false); // ← fullscreen toggle
+  const [loadingBtn, setLoadingBtn] = useState(null);
 
   useEffect(() => {
     return () => { stopCapture(); };
@@ -282,6 +285,7 @@ export default function HelmetMonitoring({ cameraId = "camera-01" }) {
   };
 
   const start = async () => {
+    setLoadingBtn("start");
     if (mode === "webcam") {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -289,6 +293,7 @@ export default function HelmetMonitoring({ cameraId = "camera-01" }) {
         await videoRef.current.play();
       } catch {
         setStatusMessage("Camera access denied or unavailable.");
+        setLoadingBtn(null);
         return;
       }
     }
@@ -300,6 +305,7 @@ export default function HelmetMonitoring({ cameraId = "camera-01" }) {
     setStatusMessage("Connecting…");
 
     ws.onopen = () => {
+      setLoadingBtn(null);
       setStatusMessage(`Connected — ${mode === "cctv" ? "CCTV" : "Webcam"} monitoring active.`);
       if (mode === "webcam") captureLoop();
     };
@@ -328,6 +334,7 @@ export default function HelmetMonitoring({ cameraId = "camera-01" }) {
 
   const reload = async () => {
     const token = sessionStorage.getItem("token");
+    setLoadingBtn("reload");
     setStatusMessage("Loading embeddings…");
     try {
       const res = await axios.post(
@@ -344,6 +351,8 @@ export default function HelmetMonitoring({ cameraId = "camera-01" }) {
       else if (status === 403) setStatusMessage("Forbidden — SUPERVISOR role required.");
       else                     setStatusMessage(`Failed to load embeddings: ${detail}`);
       setEmbeddingsLoaded(false);
+    } finally {
+      setLoadingBtn(null);
     }
   };
 
@@ -386,18 +395,18 @@ export default function HelmetMonitoring({ cameraId = "camera-01" }) {
               {mode === "cctv" && (
                 <span style={styles.rtspTag} title={rtspUrl}>{rtspUrl}</span>
               )}
-              <button
+              <LoadingButton
                 style={{ ...styles.btn, ...styles.btnGhost }}
                 onClick={switchMode}
                 disabled={running}
               >
                 ⇄ Switch
-              </button>
+              </LoadingButton>
             </>
           )}
 
           {/* ── Fullscreen toggle button ── */}
-          <button
+          <LoadingButton
             onClick={() => setFullscreen(p => !p)}
             title={fullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen"}
             style={{
@@ -412,7 +421,7 @@ export default function HelmetMonitoring({ cameraId = "camera-01" }) {
             }}
           >
             {fullscreen ? "⊠" : "⛶"}
-          </button>
+          </LoadingButton>
         </div>
       </div>
 
@@ -481,27 +490,29 @@ export default function HelmetMonitoring({ cameraId = "camera-01" }) {
       {statusMessage && <p style={styles.status}>{statusMessage}</p>}
 
       <div style={styles.controls}>
-        <button
+        <LoadingButton
           onClick={start}
           disabled={running || !embeddingsLoaded || !mode}
+          loading={loadingBtn === "start"}
           style={{ ...styles.btn, ...(running || !embeddingsLoaded || !mode ? styles.btnDisabled : styles.btnGreen) }}
         >
           ▶ Start
-        </button>
-        <button
+        </LoadingButton>
+        <LoadingButton
           onClick={stopCapture}
           disabled={!running}
           style={{ ...styles.btn, ...(!running ? styles.btnDisabled : styles.btnRed) }}
         >
           ■ Stop
-        </button>
-        <button
+        </LoadingButton>
+        <LoadingButton
           onClick={reload}
           disabled={running || !mode}
+          loading={loadingBtn === "reload"}
           style={{ ...styles.btn, ...(running || !mode ? styles.btnDisabled : styles.btnBlue) }}
         >
           {embeddingsLoaded ? "↺ Reload Index" : "⬇ Load Embeddings"}
-        </button>
+        </LoadingButton>
       </div>
     </div>
   );

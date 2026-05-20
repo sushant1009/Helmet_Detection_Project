@@ -1,15 +1,16 @@
 import  { useRef, useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import LoadingButton from "../components/LoadingButton";
 import whCode from "../assets/wh_code.jpeg";
 import "../css/Attendance.css";
-
-const API_BASE = "http://54.89.130.2:8001";
-const WS_BASE = "ws://54.89.130.2:8001";
+import {
+  ATTENDANCE_API_BASE as API_BASE,
+  ATTENDANCE_WS_BASE as WS_BASE,
+} from "../config/streamingApiConfig";
 
 const ATTENDANCE_SETUP_STEPS = [
   "Scan the WH code at shift start to open attendance verification.",
-  "Ensure the stream has clear face visibility and stable lighting.",
-  "Use the same identity used during employee face registration.",
+  "Message IN on the given number.",
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -65,14 +66,14 @@ function SourceModal({ onSelect }) {
               { mode: "webcam", icon: "📷", label: "Webcam",           desc: "Device built-in or USB camera" },
               { mode: "cctv",   icon: "📡", label: "CCTV / IP Camera", desc: "RTSP stream via backend" },
             ].map(({ mode, icon, label, desc }) => (
-              <button
+              <LoadingButton
                 key={mode}
                 onClick={() => mode === "webcam" ? onSelect({ mode }) : setScreen("cctv")}
                 style={{
                   display: "flex", alignItems: "center", gap: 12,
                   background: "var(--bg)", border: "1px solid var(--border)",
                   borderRadius: "var(--r)", padding: "13px 15px",
-                  cursor: "pointer", textAlign: "left", width: "100%",
+                  textAlign: "left", width: "100%",
                   transition: "border-color 0.15s, background 0.15s",
                   fontFamily: "var(--font)",
                 }}
@@ -85,21 +86,21 @@ function SourceModal({ onSelect }) {
                   <div style={{ fontSize: 11, color: "var(--muted)" }}>{desc}</div>
                 </div>
                 <span style={{ color: "var(--dim)", fontSize: 18 }}>›</span>
-              </button>
+              </LoadingButton>
             ))}
           </div>
         )}
 
         {screen === "cctv" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <button
+            <LoadingButton
               onClick={() => setScreen("pick")}
               style={{
                 background: "none", border: "none", color: "var(--muted)",
-                cursor: "pointer", fontFamily: "var(--font)", fontSize: 13,
+                fontFamily: "var(--font)", fontSize: 13,
                 textAlign: "left", padding: 0,
               }}
-            >← Back</button>
+            >← Back</LoadingButton>
             <div>
               <label style={{
                 fontSize: 10, color: "var(--muted)", display: "block",
@@ -126,7 +127,7 @@ function SourceModal({ onSelect }) {
               </p>
             </div>
 
-            <button
+            <LoadingButton
               disabled={!rtspUrl.trim()}
               onClick={() => onSelect({ mode: "cctv", rtspUrl: rtspUrl.trim() })}
               style={{
@@ -134,10 +135,10 @@ function SourceModal({ onSelect }) {
                 color: rtspUrl.trim() ? "#fff" : "var(--muted)",
                 border: "none", borderRadius: 6, padding: 11,
                 fontFamily: "var(--font)", fontWeight: 600, fontSize: 13,
-                cursor: rtspUrl.trim() ? "pointer" : "not-allowed",
+                width: "100%",
                 transition: "all 0.15s",
               }}
-            >Connect</button>
+            >Connect</LoadingButton>
           </div>
         )}
 
@@ -151,7 +152,7 @@ function SourceModal({ onSelect }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Control Button
 // ─────────────────────────────────────────────────────────────────────────────
-function Btn({ onClick, disabled, variant = "ghost", children, title }) {
+function Btn({ onClick, disabled, variant = "ghost", children, title, loading = false }) {
   const map = {
     green:  { bg: "#1a7a3a", fg: "#fff",           border: "none" },
     red:    { bg: "#7a1a1a", fg: "#fff",            border: "none" },
@@ -159,24 +160,32 @@ function Btn({ onClick, disabled, variant = "ghost", children, title }) {
     amber:  { bg: "rgba(245,158,11,0.12)", fg: "var(--amber)", border: "1px solid rgba(245,158,11,0.35)" },
     ghost:  { bg: "transparent", fg: "var(--muted)", border: "1px solid var(--border)" },
   };
-  const c = disabled
+  const isDisabled = disabled || loading;
+  const c = isDisabled && !loading
     ? { bg: "#151515", fg: "#333", border: "1px solid var(--border)" }
     : map[variant];
 
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
+      disabled={isDisabled}
       title={title}
       style={{
         padding: "0.45rem 1rem",
         background: c.bg, color: c.fg, border: c.border,
-        borderRadius: 5, cursor: disabled ? "not-allowed" : "pointer",
+        borderRadius: 5, cursor: isDisabled ? "not-allowed" : "pointer",
         fontFamily: "var(--font)", fontWeight: 600, fontSize: 13,
-        opacity: disabled ? 0.45 : 1, transition: "opacity 0.15s",
+        opacity: isDisabled && !loading ? 0.45 : loading ? 0.85 : 1,
+        transition: "opacity 0.15s",
         whiteSpace: "nowrap",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: loading ? "7.5rem" : undefined,
       }}
-    >{children}</button>
+    >
+      {loading ? <span className="button-loader" aria-hidden="true" /> : children}
+    </button>
   );
 }
 
@@ -199,6 +208,7 @@ export default function AttendanceViewer() {
   const [frameCount, setFrameCount] = useState(0);
   const [fps,        setFps]        = useState(1);   // frames per second
   const [isWhExpanded, setIsWhExpanded] = useState(false);
+  const [loadingBtn, setLoadingBtn] = useState(null);
   const fpsRef       = useRef(1);                    // always-current value for loop
 
   // ESC exits fullscreen
@@ -240,6 +250,7 @@ export default function AttendanceViewer() {
     if (imgRef.current) imgRef.current.src = "";
     setRunning(false);
     setStatus("Stopped.");
+    setLoadingBtn(null);
   }, []);
 
   const captureLoop = useCallback(async () => {
@@ -283,13 +294,16 @@ export default function AttendanceViewer() {
   };
 
   const start = async () => {
+    setLoadingBtn("start");
     if (mode === "webcam") {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       } catch {
-        setStatus("Camera access denied."); return;
+        setStatus("Camera access denied.");
+        setLoadingBtn(null);
+        return;
       }
     }
 
@@ -301,6 +315,7 @@ export default function AttendanceViewer() {
     setStatus("Connecting…");
 
     ws.onopen = () => {
+      setLoadingBtn(null);
       setStatus(`Connected — ${mode === "cctv" ? "CCTV stream" : "Webcam"} active`);
       if (mode === "webcam") captureLoop();
     };
@@ -324,6 +339,7 @@ export default function AttendanceViewer() {
 
   const reload = async () => {
     const token = sessionStorage.getItem("token");
+    setLoadingBtn("reload");
     setStatus("Reloading face index…");
     try {
       const res = await axios.post(
@@ -338,6 +354,8 @@ export default function AttendanceViewer() {
         s === 403 ? "Forbidden — insufficient permissions." :
         `Failed: ${err.response?.data?.detail ?? err.message}`
       );
+    } finally {
+      setLoadingBtn(null);
     }
   };
 
@@ -465,10 +483,10 @@ export default function AttendanceViewer() {
             </span>
           </div>
 
-          <Btn onClick={reload}      disabled={!mode}    variant="blue">
+          <Btn onClick={reload}      disabled={!mode}    variant="blue" loading={loadingBtn === "reload"}>
             ↺ Reload Index
           </Btn>
-          <Btn onClick={start}       disabled={running || !mode} variant="green">
+          <Btn onClick={start}       disabled={running || !mode} variant="green" loading={loadingBtn === "start"}>
             ▶ Start
           </Btn>
           <Btn onClick={stopCapture} disabled={!running} variant="red">
@@ -479,21 +497,22 @@ export default function AttendanceViewer() {
           )}
 
           {/* Fullscreen toggle */}
-          <button
+          <LoadingButton
             onClick={() => setFullscreen(p => !p)}
             title={fullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen"}
             style={{
               padding: "0.4rem 0.55rem",
               background: fullscreen ? "rgba(245,158,11,0.1)" : "transparent",
               border: `1px solid ${fullscreen ? "rgba(245,158,11,0.35)" : "var(--border)"}`,
-              borderRadius: 5, cursor: "pointer",
+              borderRadius: 5,
               color: fullscreen ? "var(--amber)" : "var(--muted)",
-              fontSize: 14, lineHeight: 1,
+              fontSize: 14,
+              lineHeight: 1,
               transition: "all 0.15s",
             }}
           >
             {fullscreen ? "⊠" : "⛶"}
-          </button>
+          </LoadingButton>
         </div>
       </header>
 
@@ -620,7 +639,7 @@ export default function AttendanceViewer() {
                 background: "#fff",
               }}
             />
-            <button
+            <LoadingButton
               onClick={() => setIsWhExpanded(true)}
               style={{
                 border: "1px solid var(--border)",
@@ -628,7 +647,6 @@ export default function AttendanceViewer() {
                 color: "var(--text)",
                 borderRadius: 6,
                 padding: "7px 10px",
-                cursor: "pointer",
                 fontFamily: "var(--font)",
                 fontSize: 12,
                 fontWeight: 600,
@@ -636,7 +654,7 @@ export default function AttendanceViewer() {
               }}
             >
               ⛶ Maximize Image
-            </button>
+            </LoadingButton>
             <div>
               <p style={{
                 fontSize: 10,
@@ -678,7 +696,7 @@ export default function AttendanceViewer() {
             padding: 24,
           }}
         >
-          <button
+          <LoadingButton
             onClick={() => setIsWhExpanded(false)}
             style={{
               position: "absolute",
@@ -689,13 +707,12 @@ export default function AttendanceViewer() {
               color: "var(--text)",
               borderRadius: 8,
               padding: "7px 11px",
-              cursor: "pointer",
               fontFamily: "var(--font)",
               fontSize: 12,
             }}
           >
             ✕ Close
-          </button>
+          </LoadingButton>
           <img
             src={whCode}
             alt="Warehouse QR attendance code expanded"

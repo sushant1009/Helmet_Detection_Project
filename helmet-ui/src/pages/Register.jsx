@@ -4,6 +4,7 @@ import Webcam from "react-webcam";
 import "./Register.css";
 import { validateForm } from "./validateRegistration";
 import api from '../config/axiosConfig'
+import LoadingButton from "../components/LoadingButton";
 
 export default function Register() {
   const webcamRef = useRef(null);
@@ -12,7 +13,7 @@ export default function Register() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otp, setOtp] = useState("");
   const [email,setEmail] = useState("")
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   
 
@@ -42,6 +43,7 @@ export default function Register() {
     if(Object.keys(validationErrors).length === 0)
     {
     try {
+      setIsLoading(true);
      await axios.post(
   "http://localhost:8080/api/auth/send-otp",
   null,
@@ -57,12 +59,15 @@ alert("OTP sent")
       setMessage("OTP sent to your email.");
     } catch {
       setMessage("Failed to send OTP. Try again.");
+    } finally {
+      setIsLoading(false);
     }
     }
   };
 
   const verifyOtp = async () => {
     try {
+      setIsLoading(true);
       const res =  await axios.post("http://localhost:8080/api/auth/verify-otp", null, { params: { email, otp } });
       console.log(res)
       if(res.status == 200) {
@@ -73,6 +78,8 @@ alert("OTP sent")
       }
     } catch {
       setMessage("Error while verifying OTP.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -84,7 +91,7 @@ alert("OTP sent")
     if (!capturedImage) return setMessage("Please capture a face image.");
     if(capturedImage && otpVerified && Object.keys(validationErrors).length === 0 )
     {
-    setLoading(true);
+    setIsLoading(true);
     const blob = await (await fetch(capturedImage)).blob();
     const imageFile = new File([blob], "face.jpg", { type: "image/jpeg" });
      setMessage("")
@@ -117,7 +124,7 @@ data.append("file", imageFile);
       console.log(err);
       alert(err.response.data)
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
     }
   };
@@ -201,9 +208,9 @@ data.append("file", imageFile);
 
         {/* OTP Section */}
         {!otpSent ? (
-          <button type="button" onClick={sendOtp} className="btn btn-primary mt-2" disabled={otpVerified}>
+          <LoadingButton type="button" onClick={sendOtp} className="btn btn-primary mt-2" loading={isLoading} disabled={otpVerified}>
             Send OTP
-          </button>
+          </LoadingButton>
         ) : !otpVerified ? (
           <div className="mt-3">
             <input
@@ -233,9 +240,9 @@ data.append("file", imageFile);
                 height={240}
                 videoConstraints={{ facingMode: "user" }}
               />
-              <button type="button" onClick={captureImage} className="btn btn-info mt-2">
+              <LoadingButton type="button" onClick={captureImage} className="btn btn-info mt-2">
                 Capture Photo
-              </button>
+              </LoadingButton>
             </>
           ) : (
             <div>
@@ -246,21 +253,21 @@ data.append("file", imageFile);
                 height="240"
                 className="border"
               />
-              <button
+              <LoadingButton
                 type="button"
                 onClick={() => setCapturedImage(null)}
                 className="btn btn-warning mt-2"
               >
                 Retake
-              </button>
+              </LoadingButton>
             </div>
           )}
         </div>
 
         <div className="text-center mt-4">
-          <button type="submit" className="btn btn-success" disabled={loading}>
-            {loading ? "Registering..." : "Register Worker"}
-          </button>
+          <LoadingButton type="submit" className="btn btn-success" loading={isLoading}>
+            Register Worker
+          </LoadingButton>
         </div>
       </form>
 

@@ -1,6 +1,6 @@
 import { React, useState, useEffect } from "react";
-import axios from "axios";
 import api from '../config/axiosConfig';
+import LoadingButton from "../components/LoadingButton";
 import "../css/Forgetpass.css";
 
 const RESEND_TIME = 60; // seconds
@@ -66,7 +66,7 @@ const Forgetpass = () => {
     }else if (error.response?.status === 500) {
       setMessage("Internal Server Error");
     }  else{
-      setMessage("OTP verification failed");
+      setMessage("Failed to send OTP...");
     }
       
     }finally{
@@ -155,9 +155,9 @@ const Forgetpass = () => {
 
       {/* Send OTP button */}
       {!otpSent && (
-        <button onClick={sendOtp} disabled={isLoading}>
-          {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Send OTP"}
-        </button>
+        <LoadingButton onClick={sendOtp} loading={isLoading}>
+          Send OTP
+        </LoadingButton>
       )}
 
       {/* OTP verification section */}
@@ -170,18 +170,18 @@ const Forgetpass = () => {
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
           />
-          <button onClick={verifyOtp} disabled={isLoading}>
-            {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Verify OTP"}
-          </button>
+          <LoadingButton onClick={verifyOtp} loading={isLoading}>
+            Verify OTP
+          </LoadingButton>
 
           {!canResend ? (
             <p className="timer">
               Resend OTP in <strong>{timer}s</strong>
             </p>
           ) : (
-            <button className="resend-btn" onClick={sendOtp} disabled={isLoading}>
-              {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Resend OTP"}
-            </button>
+            <LoadingButton className="resend-btn" onClick={sendOtp} loading={isLoading}>
+              Resend OTP
+            </LoadingButton>
           )}
         </>
       )}
@@ -202,9 +202,9 @@ const Forgetpass = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          <button onClick={changePassword} disabled={isLoading}>
-            {isLoading ? <span className="button-loader" aria-hidden="true"></span> : "Change Password"}
-          </button>
+          <LoadingButton onClick={changePassword} loading={isLoading}>
+            Change Password
+          </LoadingButton>
         </>
       )}
 
