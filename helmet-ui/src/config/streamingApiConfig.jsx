@@ -14,8 +14,8 @@ function httpOriginToWsOrigin(httpBase) {
   return httpBase;
 }
 
-const DEFAULT_HELMET_MONITORING = "http://100.24.46.153:8003";
-const DEFAULT_ATTENDANCE = "http://100.24.46.153:8001";
+const DEFAULT_HELMET_MONITORING = "http://98.90.200.32:8003";
+const DEFAULT_ATTENDANCE = "http://98.90.200.32:8001";
 
 export const HELMET_MONITORING_API_BASE = trimTrailingSlash(
   import.meta.env.VITE_HELMET_MONITORING_SERVER_URL || DEFAULT_HELMET_MONITORING
